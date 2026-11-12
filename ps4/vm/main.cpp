@@ -15,6 +15,7 @@
 #include "common/FileSystem.h"
 #include "Memory.h"
 #include "common/MemorySettingsInterface.h"
+#include "INISettingsInterface.h"
 #include "common/Timer.h"
 #include "ps2/BiosTools.h"
 #include "R5900.h"
@@ -500,6 +501,8 @@ void VMHostPoll()
 		{
 			s_game_show_performance_overlay = !s_game_show_performance_overlay;
 			ApplyPerformanceOverlay();
+			Host::SetBaseBoolSettingValue("PS4SX2", "PerformanceOverlay", s_game_show_performance_overlay);
+			Host::CommitBaseSettingChanges();
 			PublishGameMenu();
 			s_game_menu_direction = 0;
 			return;
@@ -533,7 +536,9 @@ void VMHostPoll()
 						MTGS::ApplySettings();
 						ReadGameResolution();
 						EmuConfig.GS.UpscaleMultiplier = static_cast<float>(s_game_upscale);
-						ProbeLog("Internal resolution: requested=%ux applied=%ux menu_limit=%ux (session only)\n",
+						Host::SetBaseFloatSettingValue("EmuCore/GS", "upscale_multiplier", static_cast<float>(s_game_upscale));
+						Host::CommitBaseSettingChanges();
+						ProbeLog("Internal resolution: requested=%ux applied=%ux menu_limit=%ux (saved)\n",
 							requested, s_game_upscale, s_max_game_upscale);
 					}
 				}
@@ -541,12 +546,16 @@ void VMHostPoll()
 				{
 					s_game_aspect = static_cast<unsigned>((static_cast<int>(s_game_aspect) + delta + 5) % 5);
 					ApplyGameAspect(s_game_aspect);
-					ProbeLog("Aspect ratio: index=%u (session only)\n", s_game_aspect);
+					Host::SetBaseIntSettingValue("PS4SX2", "AspectRatio", static_cast<int>(s_game_aspect));
+					Host::CommitBaseSettingChanges();
+					ProbeLog("Aspect ratio: index=%u (saved)\n", s_game_aspect);
 				}
 				else if (delta != 0)
 				{
 					s_game_show_performance_overlay = !s_game_show_performance_overlay;
 					ApplyPerformanceOverlay();
+					Host::SetBaseBoolSettingValue("PS4SX2", "PerformanceOverlay", s_game_show_performance_overlay);
+					Host::CommitBaseSettingChanges();
 				}
 			}
 			PublishGameMenu();
@@ -599,9 +608,15 @@ static void* RunVM(void*)
 	ProbeLog("IPU profiling: %s (sampled duration, nominal ratio 1/%u)\n",
 		PS4IPUProfile::s_sampling.enabled ? "enabled by opt-in marker with inclusive access sampling 1/1024" : "disabled for performance",
 		PS4IPUProfile::SAMPLE_WEIGHT);
-	static MemorySettingsInterface settings_storage;
+	static INISettingsInterface settings_storage("/data/PS4SX2/inis/PCSX2.ini");
 	static MemorySettingsInterface secrets_storage;
+	if (settings_storage.Load())
+		ProbeLog("Settings: loaded /data/PS4SX2/inis/PCSX2.ini\\n");
+	else
+		ProbeLog("Settings: no existing INI; using PS4 defaults\\n");
 	auto* settings = &settings_storage;
+	s_game_aspect = static_cast<unsigned>(std::clamp(settings->GetIntValue("PS4SX2", "AspectRatio", 1), 0, 4));
+	s_game_show_performance_overlay = settings->GetBoolValue("PS4SX2", "PerformanceOverlay", true);
 	Host::Internal::SetBaseSettingsLayer(settings);
 	Host::Internal::SetSecretsSettingsLayer(&secrets_storage);
 	VMManager::SetDefaultSettings(*settings, true, true, false, false, false);
@@ -641,7 +656,8 @@ static void* RunVM(void*)
 	ProbeLog("CDVD timing: %s\n", fast_cdvd ? "accelerated by opt-in marker" : "normal (compatibility default)");
 	// (AI-assisted) Let the backend choose the compiled renderer; on this PS4 build that is Vulkan.
 	settings->SetIntValue("EmuCore/GS", "Renderer", static_cast<int>(GSRendererType::VK));
-	settings->SetFloatValue("EmuCore/GS", "upscale_multiplier", 1.0f);
+	if (!settings->ContainsValue("EmuCore/GS", "upscale_multiplier"))
+		settings->SetFloatValue("EmuCore/GS", "upscale_multiplier", 1.0f);
 	const bool disable_shader_cache = access("/data/PS4SX2/vm-no-shader-cache", F_OK) == 0;
 	settings->SetBoolValue("EmuCore/GS", "DisableShaderCache", disable_shader_cache);
 	settings->SetBoolValue("EmuCore/GS", "HWSpinGPUForReadbacks", false);
@@ -848,6 +864,8 @@ static void* RunVM(void*)
 	const auto result = VMManager::Initialize(boot, &error);
 	if (result == VMBootResult::StartupSuccess)
 	{
+		ApplyGameAspect(s_game_aspect);
+		ApplyPerformanceOverlay();
 		if (s_use_vulkan_selector)
 			PS4GameMenu::ShowLoading(92, "Starting PlayStation 2...");
 		ProbeLog("VM runtime Fastmem=%s (after initial VTLB mappings)\n",
