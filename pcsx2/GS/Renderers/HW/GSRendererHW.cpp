@@ -151,6 +151,31 @@ void GSRendererHW::VSync(u32 field, bool registers_written, bool idle_frame)
 	m_skip_offset = 0;
 
 	GSRenderer::VSync(field, registers_written, idle_frame);
+
+#if defined(PCSX2_PS4_VM_BOOT)
+	// Profile counters are GS-thread-owned. Emit and reset them here rather than
+	// reading them from the VM/EE heartbeat thread.
+	static Common::Timer::Value s_last_profile_log = 0;
+	if (PS4GSProfile::enabled)
+	{
+		const Common::Timer::Value now = Common::Timer::GetCurrentValue();
+		if (s_last_profile_log == 0)
+			s_last_profile_log = now;
+		else
+		{
+			const double interval = Common::Timer::ConvertValueToSeconds(now - s_last_profile_log);
+			if (interval >= 5.0)
+			{
+				PS4GSProfile::LogInterval(interval);
+				s_last_profile_log = now;
+			}
+		}
+	}
+	else
+	{
+		s_last_profile_log = 0;
+	}
+#endif
 }
 
 GSTexture* GSRendererHW::GetOutput(int i, float& scale, int& y_offset)
