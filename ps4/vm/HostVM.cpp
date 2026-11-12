@@ -65,6 +65,12 @@ namespace BuildVersion
 
 void Host::CommitBaseSettingChanges()
 {
+	// The PS4 frontend stores its base settings in the persistent INI layer.
+	// Keep the settings lock while saving so no other thread can mutate it.
+	auto lock = Host::GetSettingsLock();
+	SettingsInterface* settings = Host::Internal::GetBaseSettingsLayer();
+	if (settings && !settings->Save())
+		Console.Error("Failed to save PS4SX2 settings INI");
 }
 
 void Host::AddOSDMessage(std::string message, float)
