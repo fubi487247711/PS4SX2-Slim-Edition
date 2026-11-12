@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0+
 // (AI-assisted) Uses the same Vulkan/ImGui presentation as the in-game HUD.
 #include "GameMenu.h"
+#include "Host.h"
 #include "InGameMenuState.h"
 #include "PhysicalDisc.h"
 #include "CoverDownload.h"
@@ -390,6 +391,12 @@ namespace PS4GameMenu
 					if (view == LibraryView::Library || item.favorite)
 						items.push_back(std::move(item));
 				}
+			}
+			else if (view == LibraryView::Settings)
+			{
+				items.push_back({"Internal resolution (X to cycle)", {}, {}, false});
+				items.push_back({"Aspect ratio (X to cycle)", {}, {}, false});
+				items.push_back({"Performance overlay (X to toggle)", {}, {}, false});
 			}
 			if (items.empty())
 			{
@@ -956,6 +963,33 @@ namespace PS4GameMenu
 				{
 					// Re-probe before launch, so an ejected/replaced DVD cannot use old metadata.
 					probe_disc(true);
+					Present(selected, status, connected, false, false, false);
+					Threading::Sleep(16);
+					continue;
+				}
+				if (view == LibraryView::Settings)
+				{
+					if (selected == 0)
+					{
+						const float current = Host::GetBaseFloatSettingValue("EmuCore/GS", "upscale_multiplier", 1.0f);
+						const float next = current >= 3.0f ? 1.0f : current + 1.0f;
+						Host::SetBaseFloatSettingValue("EmuCore/GS", "upscale_multiplier", next);
+						status = "Internal resolution set to " + std::to_string(static_cast<int>(next)) + "x.";
+					}
+					else if (selected == 1)
+					{
+						const int current = Host::GetBaseIntSettingValue("PS4SX2", "AspectRatio", 1);
+						const int next = (current + 1) % 5;
+						Host::SetBaseIntSettingValue("PS4SX2", "AspectRatio", next);
+						status = "Aspect ratio changed. It applies to the next game launch.";
+					}
+					else if (selected == 2)
+					{
+						const bool next = !Host::GetBaseBoolSettingValue("PS4SX2", "PerformanceOverlay", true);
+						Host::SetBaseBoolSettingValue("PS4SX2", "PerformanceOverlay", next);
+						status = next ? "Performance overlay enabled." : "Performance overlay disabled.";
+					}
+					Host::CommitBaseSettingChanges();
 					Present(selected, status, connected, false, false, false);
 					Threading::Sleep(16);
 					continue;
