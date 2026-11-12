@@ -19,7 +19,7 @@ cmake -S "$stage/ps4/vm" -B "$build" -G Ninja \
   -DPS4_MESA_BUILD="$mesa" \
   -DPCSX2_VM_JIT="${PCSX2_VM_JIT:-ON}" \
   -DPCSX2_VM_FASTMEM="${PCSX2_VM_FASTMEM:-ON}" \
-  -DPCSX2_VM_MTVU="${PCSX2_VM_MTVU:-ON}"
+  -DPCSX2_VM_MTVU="${PCSX2_VM_MTVU:-ON}" \\
   -DPCSX2_VM_EE_BLOCK_PROFILE="${PCSX2_VM_EE_BLOCK_PROFILE:-OFF}"
 cmake --build "$build" --parallel "$jobs"
 cp "$build/vm_boot" "$repo/ps4/vm/build/vm_boot"
