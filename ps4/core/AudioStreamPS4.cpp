@@ -368,6 +368,10 @@ std::unique_ptr<AudioStream> AudioStream::CreateCubebAudioStream(u32 sample_rate
 {
 	AudioStreamParameters stereo = parameters;
 	stereo.expansion_mode = AudioExpansionMode::Disabled;
+	// PS4 AudioOut is submitted in 512-frame (10.67 ms) blocks. Keep at least
+	// 100 ms queued internally to absorb short scheduling/emulation stalls;
+	// preserve any larger user-configured buffer.
+	stereo.buffer_ms = std::max<u16>(stereo.buffer_ms, 100);
 	auto stream = std::make_unique<PS4AudioStream>(sample_rate, stereo);
 	if (!stream->Open(stretch_enabled, error))
 		return nullptr;
