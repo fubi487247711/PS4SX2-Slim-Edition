@@ -3,7 +3,7 @@ name: Build PS4SX2
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, experiment/audio-scheduler-placement]
     paths-ignore:
       - 'MD/**'
       - '**/*.md'
