@@ -236,7 +236,7 @@ namespace
 		void Run()
 		{
 			Threading::SetNameOfCurrentThread("PS4 AudioOut");
-			PS4ThreadAffinity::PinCurrentThread("Audio", 5);
+			// Experimental: let the PS4 scheduler place the audio worker instead of pinning it to core 5.
 			u64 buffers = 0, pcm_buffers = 0, input_short = 0, paused_buffers = 0;
 			u64 invalid_samples = 0, clipped_samples = 0;
 			u64 refill_pending = 0;
