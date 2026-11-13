@@ -7,10 +7,21 @@
 #include "common/Pcsx2Defs.h"
 
 #include <atomic>
+#include <cstdio>
+#include <unistd.h>
 
-bool OrbisFlag(const char*)
+bool OrbisFlag(const char* name)
 {
-	return false;
+	if (!name || !*name)
+		return false;
+
+	char path[256];
+	std::snprintf(path, sizeof(path), "/data/PCSX2/flags/%s", name);
+	if (access(path, F_OK) == 0)
+		return true;
+
+	std::snprintf(path, sizeof(path), "/data/PCSX2/%s", name);
+	return access(path, F_OK) == 0;
 }
 
 void OrbisCpuSample(int)
