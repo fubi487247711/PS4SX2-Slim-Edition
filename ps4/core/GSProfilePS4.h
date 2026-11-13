@@ -25,6 +25,9 @@ namespace PS4GSProfile
 		TextureUpdate,
 		Readback,
 		SWSprite,
+		PrimitiveCoverage,
+		TextureMinMax,
+		TextureLookup,
 		Count
 	};
 	struct Counter
