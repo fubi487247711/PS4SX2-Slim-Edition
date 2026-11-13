@@ -2804,11 +2804,11 @@ void GSRendererHW::RoundSpriteOffset()
 // Orbis profiling: per-draw CPU time of the whole HW draw vs the GL submission part.
 const GSDrawingContext* g_orbis_ctx; unsigned g_orbis_tme, g_orbis_prim, g_orbis_verts;
 unsigned long long g_orbis_mark[5], g_orbis_draw_t0, g_orbis_m2[6], g_orbis_d[5], g_orbis_gap[6], g_orbis_gap_n, g_orbis_early_n, g_orbis_early_ticks;
-// PS5 port (vk-285-85): the per-draw timing ([hwprof]/[drawsec]/[readprof]/[drawgap], ~20 rdtsc a draw and
-// four lines printed and flushed from the GS thread every 20,000 draws: ~1-2% of the GS thread in
-// vk-285-84's Shadow of the Colossus profile) only runs with the flag file flags/drawprof, read once.
+// The per-draw timing ([hwprof]/[drawsec]/[readprof]/[drawgap]) is opt-in: it
+// adds RDTSC work to the GS thread and can affect performance. Read flags/drawprof
+// once on the first draw so normal gameplay runs without this instrumentation.
 extern bool OrbisFlag(const char* name);
-static bool s_orbis_drawprof = true, s_orbis_drawprof_read = true;
+static bool s_orbis_drawprof = false, s_orbis_drawprof_read = false;
 static bool s_orbis_decal_modulate = false; // vk-285-118 (AI-assisted): the switch decal_modulate (EmulateTextureSampler), read with drawprof
 static inline void OrbisDrawProfRead()
 {
