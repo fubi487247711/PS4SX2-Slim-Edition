@@ -10,6 +10,7 @@
 #include "GS/GSDump.h"
 #include "GS/GSGL.h"
 #include "GS/GSPerfMon.h"
+#include "ps4/core/GSProfilePS4.h"
 #include "GS/GSUtil.h"
 #include "GSDumpReplayer.h"
 #include "Host.h"
@@ -758,6 +759,25 @@ void GSRenderer::VSync(u32 field, bool registers_written, bool idle_frame)
 #if !defined(PCSX2_GS_RENDERER_PROBE)
 		PerformanceMetrics::Update(registers_written, fb_sprite_frame, false);
 #endif
+	}
+
+	// Emit GS-owned profiling counters from the GS thread. The counters are
+	// deliberately not read by the EE heartbeat because they are GS-owned.
+	if (PS4GSProfile::enabled)
+	{
+		static Common::Timer::Value s_last_gs_profile_log = 0;
+		const Common::Timer::Value now = Common::Timer::GetCurrentValue();
+		if (s_last_gs_profile_log == 0)
+			s_last_gs_profile_log = now;
+		else
+		{
+			const double interval = Common::Timer::ConvertValueToSeconds(now - s_last_gs_profile_log);
+			if (interval >= 5.0)
+			{
+				s_last_gs_profile_log = now;
+				PS4GSProfile::LogInterval(interval);
+			}
+		}
 	}
 
 #if !defined(PCSX2_GS_RENDERER_PROBE)
