@@ -729,10 +729,10 @@ static void* RunVM(void*)
 	ProbeLog("PS4 audio configuration: %s (stereo PCM16 48 kHz, main port, explicit 0 dB; disable with /data/PS4SX2/vm-no-audio)\n",
 		audio_enabled ? "native AudioOut with TimeStretch" : "Null by marker");
 	PrepareEmulatorFolders(*settings);
-	PS4GSProfile::enabled = access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 &&
-	                        access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0;
-	ProbeLog("GS profiling: %s (hot calls sampled 1/64; inclusive wall time)\n",
-		PS4GSProfile::enabled ? "enabled by opt-in marker" : "disabled for performance");
+	// Diagnostic build: sample GS hot paths at 1/64 so the next optimization is based on measured CPU time.
+	PS4GSProfile::enabled = access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0;
+	ProbeLog("GS profiling: %s (diagnostic build; hot calls sampled 1/64; inclusive wall time)\n",
+		PS4GSProfile::enabled ? "enabled" : "disabled by marker");
 	ProbeLog("VM configuration: observation=unlimited renderer=vulkan mtvu=%s fastmem-build=%s shader_cache=%s directory=%s\n",
 #if defined(PCSX2_PS4_VM_BOOT_MTVU)
 		"on",
