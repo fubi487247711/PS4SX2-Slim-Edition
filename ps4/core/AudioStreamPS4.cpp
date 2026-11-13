@@ -25,6 +25,7 @@ namespace
 		std::atomic<bool> attempted{false};
 		std::atomic<int> status{0}; // 1 = active, 0 = closed, negative = error
 		std::atomic<u64> buffers{0}, pcm_buffers{0}, input_short{0}, paused{0};
+		std::atomic<u64> underflow_events{0}, filling_blocks{0};
 		std::atomic<u64> refill_pending{0};
 		std::atomic<u32> queue_min{0}, queue_max{0};
 		std::atomic<u32> peak_q15{0}, rms_q15{0};
@@ -238,6 +239,7 @@ namespace
 			Threading::SetNameOfCurrentThread("PS4 AudioOut");
 			PS4ThreadAffinity::PinCurrentThread("Audio", 5);
 			u64 buffers = 0, pcm_buffers = 0, input_short = 0, paused_buffers = 0;
+			u64 underflow_events = 0, filling_blocks = 0;
 			u64 invalid_samples = 0, clipped_samples = 0;
 			u64 refill_pending = 0;
 			u32 queue_min = UINT32_MAX, queue_max = 0;
@@ -254,8 +256,13 @@ namespace
 					}
 					else
 					{
+						const bool was_filling = m_filling;
 						if (!ReadOutputFrames(input_short, refill_pending, queue_min, queue_max))
 							return;
+						if (!was_filling && m_filling)
+							underflow_events++;
+						if (m_filling)
+							filling_blocks++;
 					}
 				}
 				float peak = 0.0f;
@@ -293,6 +300,8 @@ namespace
 				s_output.input_short.store(input_short, std::memory_order_relaxed);
 				s_output.paused.store(paused_buffers, std::memory_order_relaxed);
 				s_output.refill_pending.store(refill_pending, std::memory_order_relaxed);
+				s_output.underflow_events.store(underflow_events, std::memory_order_relaxed);
+				s_output.filling_blocks.store(filling_blocks, std::memory_order_relaxed);
 				window_peak = std::max(window_peak, peak);
 				window_frames += GRAIN;
 				if (window_frames >= OUTPUT_RATE)
@@ -341,7 +350,9 @@ void PS4Audio::LogStatus()
 		static_cast<unsigned long long>(s_output.paused.load(std::memory_order_relaxed)));
 	ProbeLog("PS4 audio queue: min_frames=%u max_frames=%u refill_pending=%llu\n",
 		s_output.queue_min.load(std::memory_order_relaxed), s_output.queue_max.load(std::memory_order_relaxed),
-		static_cast<unsigned long long>(s_output.refill_pending.load(std::memory_order_relaxed)));
+		static_cast<unsigned long long>(s_output.refill_pending.load(std::memory_order_relaxed)),
+		static_cast<unsigned long long>(s_output.underflow_events.load(std::memory_order_relaxed)),
+		static_cast<unsigned long long>(s_output.filling_blocks.load(std::memory_order_relaxed)));
 	ProbeLog("PS4 audio signal: peak_q15=%u rms_q15=%u invalid_samples=%llu clipped_samples=%llu "
 			 "port_result=%#x output=%#x channels=%u volume_raw=%d flags=%#llx\n",
 		s_output.peak_q15.load(std::memory_order_relaxed), s_output.rms_q15.load(std::memory_order_relaxed),
