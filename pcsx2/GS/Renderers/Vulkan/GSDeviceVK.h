@@ -31,7 +31,7 @@ class GSDeviceVK final : public GSDevice
 public:
 	enum : u32
 	{
-		NUM_COMMAND_BUFFERS = 3,
+		NUM_COMMAND_BUFFERS = 4,
 	};
 
 	struct OptionalExtensions
