@@ -3276,7 +3276,7 @@ ORBIS_M2(0);
 				DetectRedundantBufferClear(no_rt, no_ds, fm_mask);
 	}
 
-	CalculatePrimitiveCoversWithoutGaps();
+	{ PS4_GS_SCOPE(PrimitiveCoverage); CalculatePrimitiveCoversWithoutGaps(); }
 
 	const bool not_writing_to_all = (m_primitive_covers_without_gaps != NoGapsType::FullCover || AreAnyPixelsDiscarded() || !all_depth_tests_pass);
 	bool preserve_depth =
@@ -3612,7 +3612,7 @@ ORBIS_M2(0);
 			TEX0 = m_cached_ctx.TEX0;
 		}
 
-		{ ORBIS_SEC_BEGIN(); tmm = GetTextureMinMax(TEX0, MIP_CLAMP, m_vt.IsLinear(), false); ORBIS_SEC_END(3); }
+		{ PS4_GS_SCOPE(TextureMinMax); ORBIS_SEC_BEGIN(); tmm = GetTextureMinMax(TEX0, MIP_CLAMP, m_vt.IsLinear(), false); ORBIS_SEC_END(3); }
 
 		// Snowblind games set TW/TH to 1024, and use UVs for smaller textures inside that.
 		// Such textures usually contain junk in local memory, so try to make them smaller based on UVs.
@@ -3734,7 +3734,7 @@ ORBIS_M2(0);
 		}
 		else
 		{
-			{ ORBIS_SEC_BEGIN(); src = tex_psm.depth ? g_texture_cache->LookupDepthSource(true, TEX0, m_cached_ctx.TEXA, MIP_CLAMP, tmm.coverage, possible_shuffle, m_vt.IsLinear(), m_cached_ctx.FRAME, req_color, req_alpha)
+			{ PS4_GS_SCOPE(TextureLookup); ORBIS_SEC_BEGIN(); src = tex_psm.depth ? g_texture_cache->LookupDepthSource(true, TEX0, m_cached_ctx.TEXA, MIP_CLAMP, tmm.coverage, possible_shuffle, m_vt.IsLinear(), m_cached_ctx.FRAME, req_color, req_alpha)
 			                    : g_texture_cache->LookupSource(true, TEX0, m_cached_ctx.TEXA, MIP_CLAMP, tmm.coverage, (GSConfig.HWMipmap || GSConfig.TriFilter == TriFiltering::Forced) ? &hash_lod_range : nullptr,
 			                         possible_shuffle, m_vt.IsLinear(), m_cached_ctx.FRAME, req_color, req_alpha); ORBIS_SEC_END(0); }
 
