@@ -42,10 +42,14 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y ca-certificates curl gnupg cmake ninja-build rsync python3 libxml2 libtinfo6 zlib1g
-          curl --fail --location --retry 3 https://apt.llvm.org/llvm-snapshot.gpg.key -o "$RUNNER_TEMP/llvm.asc"
+          curl --fail --location --retry 10 --retry-all-errors --retry-delay 5 --connect-timeout 30 --max-time 180 https://apt.llvm.org/llvm-snapshot.gpg.key -o "$RUNNER_TEMP/llvm.asc"
           gpg --dearmor < "$RUNNER_TEMP/llvm.asc" | sudo tee /usr/share/keyrings/llvm-ci.gpg >/dev/null
           echo 'deb [signed-by=/usr/share/keyrings/llvm-ci.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main' | sudo tee /etc/apt/sources.list.d/llvm-ci.list
-          sudo apt-get update
+          for attempt in 1 2 3 4 5; do
+            if sudo apt-get update; then break; fi
+            if [ "$attempt" -eq 5 ]; then exit 1; fi
+            sleep 10
+          done
           sudo apt-get install -y clang-21 llvm-21 lld-21
 
       - name: Compile and generate EBOOT
