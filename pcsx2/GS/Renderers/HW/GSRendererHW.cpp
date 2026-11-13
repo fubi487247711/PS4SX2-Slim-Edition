@@ -2808,7 +2808,7 @@ unsigned long long g_orbis_mark[5], g_orbis_draw_t0, g_orbis_m2[6], g_orbis_d[5]
 // four lines printed and flushed from the GS thread every 20,000 draws: ~1-2% of the GS thread in
 // vk-285-84's Shadow of the Colossus profile) only runs with the flag file flags/drawprof, read once.
 extern bool OrbisFlag(const char* name);
-static bool s_orbis_drawprof = false, s_orbis_drawprof_read = false;
+static bool s_orbis_drawprof = true, s_orbis_drawprof_read = true;
 static bool s_orbis_decal_modulate = false; // vk-285-118 (AI-assisted): the switch decal_modulate (EmulateTextureSampler), read with drawprof
 static inline void OrbisDrawProfRead()
 {
