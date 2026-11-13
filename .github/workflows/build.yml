@@ -3,7 +3,7 @@ name: Build PS4SX2
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, experiment/audio-scheduler-placement]
     paths-ignore:
       - 'MD/**'
       - '**/*.md'
@@ -64,6 +64,8 @@ jobs:
           export VM_SOURCE_STAGE="$RUNNER_TEMP/ps4sx2-src"
           export VM_BUILD_DIR="$RUNNER_TEMP/ps4sx2-build"
           export PCSX2_VM_JIT=ON PCSX2_VM_FASTMEM=ON PCSX2_VM_MTVU=ON
+          # Enable sampled EE block profiling only on the experimental branch; keep main release builds clean.
+          if [[ "$GITHUB_REF" == "refs/heads/experiment/audio-scheduler-placement" ]]; then export PCSX2_VM_EE_BLOCK_PROFILE=ON; else export PCSX2_VM_EE_BLOCK_PROFILE=OFF; fi
           chmod +x "$OPENORBIS"/bin/*
           bash ps4/vm/build-wsl.sh 2 2>&1 | tee ci-output/compile.log
           cp ps4/vm/build/{eboot.bin,vm_boot,vm_boot.oelf} ci-output/

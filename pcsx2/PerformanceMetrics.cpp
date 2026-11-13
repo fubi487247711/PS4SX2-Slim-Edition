@@ -202,11 +202,20 @@ void PerformanceMetrics::Update(bool gs_register_write, bool fb_blit, bool is_sk
 	const u64 ticks_delta = ticks - s_last_ticks;
 	s_last_ticks = ticks;
 
+#if defined(PCSX2_PS4_VM_BOOT)
+	// PS4ThreadCPUMetrics publishes CLOCK_THREAD_CPUTIME_ID in microseconds.
+	// Do not scale those values with the host's GetCPUTicks/thread-tick units:
+	// that mixed-unit conversion made the EE/GS/VU1 percentages and ms/frame
+	// diagnostics incomparable with the actual 500 ms performance window.
+	const double pct_divider = 100.0 / (time * 1000000.0);
+	const double time_divider = 1.0 / (1000.0 * static_cast<double>(s_frames_since_last_update));
+#else
 	const double pct_divider =
 		100.0 * (1.0 / ((static_cast<double>(ticks_delta) * static_cast<double>(Threading::GetThreadTicksPerSecond())) /
 						   static_cast<double>(GetTickFrequency())));
 	const double time_divider = 1000.0 * (1.0 / static_cast<double>(Threading::GetThreadTicksPerSecond())) *
 								(1.0 / static_cast<double>(s_frames_since_last_update));
+#endif
 
 #if defined(PCSX2_PS4_VM_BOOT)
 	PS4ThreadCPUMetrics::Sample(PS4ThreadCPUMetrics::Role::GS);

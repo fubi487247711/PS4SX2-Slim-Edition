@@ -151,6 +151,31 @@ void GSRendererHW::VSync(u32 field, bool registers_written, bool idle_frame)
 	m_skip_offset = 0;
 
 	GSRenderer::VSync(field, registers_written, idle_frame);
+
+#if defined(PCSX2_PS4_VM_BOOT)
+	// Profile counters are GS-thread-owned. Emit and reset them here rather than
+	// reading them from the VM/EE heartbeat thread.
+	static Common::Timer::Value s_last_profile_log = 0;
+	if (PS4GSProfile::enabled)
+	{
+		const Common::Timer::Value now = Common::Timer::GetCurrentValue();
+		if (s_last_profile_log == 0)
+			s_last_profile_log = now;
+		else
+		{
+			const double interval = Common::Timer::ConvertValueToSeconds(now - s_last_profile_log);
+			if (interval >= 5.0)
+			{
+				PS4GSProfile::LogInterval(interval);
+				s_last_profile_log = now;
+			}
+		}
+	}
+	else
+	{
+		s_last_profile_log = 0;
+	}
+#endif
 }
 
 GSTexture* GSRendererHW::GetOutput(int i, float& scale, int& y_offset)
@@ -2783,7 +2808,7 @@ unsigned long long g_orbis_mark[5], g_orbis_draw_t0, g_orbis_m2[6], g_orbis_d[5]
 // four lines printed and flushed from the GS thread every 20,000 draws: ~1-2% of the GS thread in
 // vk-285-84's Shadow of the Colossus profile) only runs with the flag file flags/drawprof, read once.
 extern bool OrbisFlag(const char* name);
-static bool s_orbis_drawprof = false, s_orbis_drawprof_read = false;
+static bool s_orbis_drawprof = true, s_orbis_drawprof_read = true;
 static bool s_orbis_decal_modulate = false; // vk-285-118 (AI-assisted): the switch decal_modulate (EmulateTextureSampler), read with drawprof
 static inline void OrbisDrawProfRead()
 {
