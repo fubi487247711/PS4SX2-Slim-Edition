@@ -19,6 +19,9 @@
 #define printf OrbisDeferredPrintf
 #define fflush OrbisDeferredFlush
 
+// Resolve the PS4 profiling marker on the GS thread as well as during VM startup.
+extern bool OrbisFlag(const char* name);
+
 using PS_ATST  = GSShader::PS_ATST;
 using PS_AFAIL = GSShader::PS_AFAIL;
 
@@ -153,6 +156,18 @@ void GSRendererHW::VSync(u32 field, bool registers_written, bool idle_frame)
 	GSRenderer::VSync(field, registers_written, idle_frame);
 
 #if defined(PCSX2_PS4_VM_BOOT)
+	// Resolve the marker on the GS thread. VM startup can set the flag before or
+	// after GS creation; this first-VSync check guarantees the GS sees it.
+	static bool s_profile_marker_checked = false;
+	if (!s_profile_marker_checked)
+	{
+		s_profile_marker_checked = true;
+		const bool marker_enabled = (OrbisFlag("drawprof") || OrbisFlag("vm-profile-gs")) &&
+			!OrbisFlag("vm-no-gs-profile");
+		if (marker_enabled)
+			PS4GSProfile::enabled = true;
+		printf("PS4 GS profiling marker: %s\\n", PS4GSProfile::enabled ? "enabled" : "disabled");
+	}
 	// Profile counters are GS-thread-owned. Emit and reset them here rather than
 	// reading them from the VM/EE heartbeat thread.
 	static Common::Timer::Value s_last_profile_log = 0;
@@ -2807,7 +2822,6 @@ unsigned long long g_orbis_mark[5], g_orbis_draw_t0, g_orbis_m2[6], g_orbis_d[5]
 // The per-draw timing ([hwprof]/[drawsec]/[readprof]/[drawgap]) is opt-in: it
 // adds RDTSC work to the GS thread and can affect performance. Read flags/drawprof
 // once on the first draw so normal gameplay runs without this instrumentation.
-extern bool OrbisFlag(const char* name);
 static bool s_orbis_drawprof = false, s_orbis_drawprof_read = false;
 static bool s_orbis_decal_modulate = false; // vk-285-118 (AI-assisted): the switch decal_modulate (EmulateTextureSampler), read with drawprof
 static inline void OrbisDrawProfRead()
