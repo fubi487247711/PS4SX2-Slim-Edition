@@ -20,6 +20,7 @@
 #define fflush OrbisDeferredFlush
 
 // Resolve the PS4 profiling marker on the GS thread as well as during VM startup.
+// This keeps marker discovery independent of VM startup ordering.
 extern bool OrbisFlag(const char* name);
 
 using PS_ATST  = GSShader::PS_ATST;
