@@ -3,7 +3,7 @@ name: Build PS4SX2
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, package-34-performance-fix]
     paths-ignore:
       - 'MD/**'
       - '**/*.md'
@@ -67,7 +67,7 @@ jobs:
           chmod +x "$OPENORBIS"/bin/*
           bash ps4/vm/build-wsl.sh 2 2>&1 | tee ci-output/compile.log
           cp ps4/vm/build/{eboot.bin,vm_boot,vm_boot.oelf} ci-output/
-          printf 'Commit: %s\nSDK SHA256: %s\n' "$GITHUB_SHA" "$PS4_SDK_SHA256" > ci-output/build-info.txt
+          printf 'Commit: %s\\nSDK SHA256: %s\\n' "$GITHUB_SHA" "$PS4_SDK_SHA256" > ci-output/build-info.txt
           clang-21 --version >> ci-output/build-info.txt
 
       - name: Upload executable and symbols
