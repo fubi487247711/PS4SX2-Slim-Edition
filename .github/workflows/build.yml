@@ -3,7 +3,7 @@ name: Build PS4SX2
 on:
   workflow_dispatch:
   push:
-    branches: [main, experiment/audio-scheduler-placement, experiment/bt3-drawprof-opt-in]
+    branches: [main, experiment/audio-scheduler-placement, experiment/bt3-drawprof-opt-in, package-35-from-paket-33]
     paths-ignore:
       - 'MD/**'
       - '**/*.md'
