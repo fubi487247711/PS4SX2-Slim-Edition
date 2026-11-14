@@ -620,10 +620,9 @@ static void* RunVM(void*)
 	Host::Internal::SetBaseSettingsLayer(settings);
 	Host::Internal::SetSecretsSettingsLayer(&secrets_storage);
 	VMManager::SetDefaultSettings(*settings, true, true, false, false, false);
-	// (AI-assisted) Fase 1: EE is 30-38ms bottleneck on Jaguar (Speed 48-55% in GTA/GoW FMV, GPU 1-2ms).
-	// Default to mild underclock (-1 = 75% cycles) for headroom; exact cycle accuracy costs ~25%
-	// EE time on this CPU. Original 100% stays via marker for sensitive titles. Needs proper testing.
-	int ee_cycle_rate = -1;
+	// Default to the normal EE cycle rate. Underclocking is opt-in only because it
+	// changes guest timing and can reduce effective game speed in timing-sensitive titles.
+	int ee_cycle_rate = 0;
 	if (access("/data/PS4SX2/vm-ee-cycle-normal", F_OK) == 0)
 		ee_cycle_rate = 0;
 	else if (access("/data/PS4SX2/vm-ee-cycle-underclock", F_OK) == 0)
