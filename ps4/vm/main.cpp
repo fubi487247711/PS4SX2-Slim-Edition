@@ -730,7 +730,7 @@ static void* RunVM(void*)
 		audio_enabled ? "native AudioOut with TimeStretch" : "Null by marker");
 	PrepareEmulatorFolders(*settings);
 	// Diagnostic build: sample GS hot paths at 1/64 so the next optimization is based on measured CPU time.
-	PS4GSProfile::enabled = access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0;
+	PS4GSProfile::enabled = (access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 && access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0) || s_verbose_diag;
 	ProbeLog("GS profiling: %s (diagnostic build; hot calls sampled 1/64; inclusive wall time)\n",
 		PS4GSProfile::enabled ? "enabled" : "disabled by marker");
 	ProbeLog("VM configuration: observation=unlimited renderer=vulkan mtvu=%s fastmem-build=%s shader_cache=%s directory=%s\n",
@@ -901,7 +901,7 @@ static void* RunVM(void*)
 		ProbeLog("Performance diagnosis: workers=%d EE_phases=%d sample_ratio=1/1024; opt-in with /data/PS4SX2/vm-profile-perf\n",
 			performance_profile ? 1 : 0, PS4EEEventProfile::s_sampling.enabled ? 1 : 0);
 		// (AI-assisted) Verbose also forces GS profiling on. Needs proper testing on console overhead.
-		PS4GSProfile::enabled = (access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0) || s_verbose_diag;
+		PS4GSProfile::enabled = (access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 && access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0) || s_verbose_diag;
 		ProbeLog("GS profiling: %s (default 1/64 sampling; disable with /data/PS4SX2/vm-no-gs-profile; verbose forces on)\n",
 			PS4GSProfile::enabled ? "enabled" : "disabled");
 		s_host_poll_gate.Reset();
