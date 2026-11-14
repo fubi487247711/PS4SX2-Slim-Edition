@@ -730,7 +730,8 @@ static void* RunVM(void*)
 	ProbeLog("PS4 audio configuration: %s (stereo PCM16 48 kHz, main port, explicit 0 dB; disable with /data/PS4SX2/vm-no-audio)\n",
 		audio_enabled ? "native AudioOut with TimeStretch" : "Null by marker");
 	PrepareEmulatorFolders(*settings);
-	const bool gs_profile_marker =
+	// Keep GS profiling marker lookup compatible with both legacy and /flags locations.
+const bool gs_profile_marker =
 		access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 ||
 		access("/data/PS4SX2/flags/vm-profile-gs", F_OK) == 0 ||
 		access("/data/PS4SX2/drawprof", F_OK) == 0 ||
