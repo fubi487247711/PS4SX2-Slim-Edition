@@ -901,8 +901,8 @@ static void* RunVM(void*)
 		ProbeLog("Performance diagnosis: workers=%d EE_phases=%d sample_ratio=1/1024; opt-in with /data/PS4SX2/vm-profile-perf\n",
 			performance_profile ? 1 : 0, PS4EEEventProfile::s_sampling.enabled ? 1 : 0);
 		// (AI-assisted) Verbose also forces GS profiling on. Needs proper testing on console overhead.
-		PS4GSProfile::enabled = (access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 && access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0) || s_verbose_diag;
-		ProbeLog("GS profiling: %s (verbose forces 1/64 sampling when vm-verbose-log present)\n",
+		PS4GSProfile::enabled = (access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0) || s_verbose_diag;
+		ProbeLog("GS profiling: %s (default 1/64 sampling; disable with /data/PS4SX2/vm-no-gs-profile; verbose forces on)\n",
 			PS4GSProfile::enabled ? "enabled" : "disabled");
 		s_host_poll_gate.Reset();
 		ProbeLog("Host clock gate runtime: max_calls=%u cycle_interval=%u input_interval_ms=10\n",
