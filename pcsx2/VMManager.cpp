@@ -3345,9 +3345,11 @@ void VMManager::WarnAboutUnsafeSettings()
 
 	if (EmuConfig.Speedhacks.fastCDVD)
 		append(ICON_FA_COMPACT_DISC, TRANSLATE_SV("VMManager", "Fast CDVD is enabled, this may break games."));
-#ifdef __PROSPERO__
-	// PS5SX2 (vk-285-113): the settings page's recommended EE clock is 130% (EECycleRate 1). The log said
-	// "may crash or make games run too slow" in every session that used it, and testers read it as a fault.
+#if defined(PCSX2_PS4)
+	// The PS4 port's normal EE timing is the upstream default: 100% rate and no cycle skip.
+	const bool port_cycle_rate_default = (EmuConfig.Speedhacks.EECycleRate == 0 && EmuConfig.Speedhacks.EECycleSkip == 0);
+#elif defined(__PROSPERO__)
+	// PS5SX2's recommended EE clock is 130% (EECycleRate 1).
 	const bool port_cycle_rate_default = (EmuConfig.Speedhacks.EECycleRate == 1 && EmuConfig.Speedhacks.EECycleSkip == 0);
 #else
 	const bool port_cycle_rate_default = false;
@@ -3453,7 +3455,14 @@ void VMManager::WarnAboutUnsafeSettings()
 				TRANSLATE_SV("VMManager", "Integer scaling is enabled. This may shrink the image."));
 		}
 		static bool render_change_warn = false;
-		if (EmuConfig.GS.Renderer != GSRendererType::Auto && EmuConfig.GS.Renderer != GSRendererType::SW && !render_change_warn)
+#if defined(PCSX2_PS4)
+		// This PS4 port intentionally selects its compiled Vulkan backend; it has no alternate hardware API.
+		const bool port_renderer_default = (EmuConfig.GS.Renderer == GSRendererType::VK);
+#else
+		const bool port_renderer_default = false;
+#endif
+		if (EmuConfig.GS.Renderer != GSRendererType::Auto && EmuConfig.GS.Renderer != GSRendererType::SW &&
+			!port_renderer_default && !render_change_warn)
 		{
 			// show messagesbox
 			render_change_warn = true;
