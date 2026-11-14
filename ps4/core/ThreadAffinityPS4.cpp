@@ -21,7 +21,7 @@ namespace PS4ThreadAffinity
 		if (value >= 0)
 			return value != 0;
 
-		value = access("/data/PS4SX2/vm-no-thread-affinity", F_OK) == 0 ? 0 : 1;
+		value = access("/data/PS4SX2/vm-force-thread-affinity", F_OK) == 0 ? 1 : 0;
 		enabled.store(value, std::memory_order_release);
 		return value != 0;
 	}
@@ -30,7 +30,7 @@ namespace PS4ThreadAffinity
 	{
 		if (!IsEnabled())
 		{
-			std::printf("PS4 thread affinity: %s left to scheduler (disabled by marker)\n", role);
+			std::printf("PS4 thread affinity: %s left to scheduler (default; create vm-force-thread-affinity to enable pinning)\n", role);
 			std::fflush(stdout);
 			return;
 		}
