@@ -21,6 +21,11 @@ bool OrbisFlag(const char* name)
 		return true;
 
 	std::snprintf(path, sizeof(path), "/data/PCSX2/%s", name);
+	if (access(path, F_OK) == 0)
+		return true;
+
+	// Also accept the PS4SX2 data directory used by the PS4 build.
+	std::snprintf(path, sizeof(path), "/data/PS4SX2/%s", name);
 	return access(path, F_OK) == 0;
 }
 
