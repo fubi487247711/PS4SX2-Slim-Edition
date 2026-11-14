@@ -730,8 +730,15 @@ static void* RunVM(void*)
 	ProbeLog("PS4 audio configuration: %s (stereo PCM16 48 kHz, main port, explicit 0 dB; disable with /data/PS4SX2/vm-no-audio)\n",
 		audio_enabled ? "native AudioOut with TimeStretch" : "Null by marker");
 	PrepareEmulatorFolders(*settings);
-	PS4GSProfile::enabled = access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 &&
-	                        access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0;
+	const bool gs_profile_marker =
+		access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 ||
+		access("/data/PS4SX2/flags/vm-profile-gs", F_OK) == 0 ||
+		access("/data/PS4SX2/drawprof", F_OK) == 0 ||
+		access("/data/PS4SX2/flags/drawprof", F_OK) == 0;
+	const bool gs_profile_disabled =
+		access("/data/PS4SX2/vm-no-gs-profile", F_OK) == 0 ||
+		access("/data/PS4SX2/flags/vm-no-gs-profile", F_OK) == 0;
+	PS4GSProfile::enabled = gs_profile_marker && !gs_profile_disabled;
 	ProbeLog("GS profiling: %s (hot calls sampled 1/64; inclusive wall time)\n",
 		PS4GSProfile::enabled ? "enabled by opt-in marker" : "disabled for performance");
 	ProbeLog("VM configuration: observation=unlimited renderer=vulkan mtvu=%s fastmem-build=%s shader_cache=%s directory=%s\n",
@@ -902,7 +909,15 @@ static void* RunVM(void*)
 		ProbeLog("Performance diagnosis: workers=%d EE_phases=%d sample_ratio=1/1024; opt-in with /data/PS4SX2/vm-profile-perf\n",
 			performance_profile ? 1 : 0, PS4EEEventProfile::s_sampling.enabled ? 1 : 0);
 		// (AI-assisted) Verbose also forces GS profiling on. Needs proper testing on console overhead.
-		PS4GSProfile::enabled = (access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 && access("/data/PS4SX2/vm-no-gs-profile", F_OK) != 0) || s_verbose_diag;
+		const bool gs_profile_marker =
+			access("/data/PS4SX2/vm-profile-gs", F_OK) == 0 ||
+			access("/data/PS4SX2/flags/vm-profile-gs", F_OK) == 0 ||
+			access("/data/PS4SX2/drawprof", F_OK) == 0 ||
+			access("/data/PS4SX2/flags/drawprof", F_OK) == 0;
+		const bool gs_profile_disabled =
+			access("/data/PS4SX2/vm-no-gs-profile", F_OK) == 0 ||
+			access("/data/PS4SX2/flags/vm-no-gs-profile", F_OK) == 0;
+		PS4GSProfile::enabled = (gs_profile_marker && !gs_profile_disabled) || s_verbose_diag;
 		ProbeLog("GS profiling: %s (verbose forces 1/64 sampling when vm-verbose-log present)\n",
 			PS4GSProfile::enabled ? "enabled" : "disabled");
 		s_host_poll_gate.Reset();
