@@ -21,7 +21,9 @@ namespace PS4ThreadAffinity
 		if (value >= 0)
 			return value != 0;
 
-		value = access("/data/PS4SX2/vm-force-thread-affinity", F_OK) == 0 ? 1 : 0;
+		// Use the existing PS4 role-to-core layout by default. Keep an explicit
+		// escape hatch for consoles/firmware where the scheduler performs better.
+		value = access("/data/PS4SX2/vm-no-thread-affinity", F_OK) == 0 ? 0 : 1;
 		enabled.store(value, std::memory_order_release);
 		return value != 0;
 	}
@@ -30,14 +32,13 @@ namespace PS4ThreadAffinity
 	{
 		if (!IsEnabled())
 		{
-			std::printf("PS4 thread affinity: %s left to scheduler (default; create vm-force-thread-affinity to enable pinning)\n", role);
+			std::printf("PS4 thread affinity: %s left to scheduler (disabled by vm-no-thread-affinity)\n", role);
 			std::fflush(stdout);
 			return;
 		}
 
 		const unsigned long long mask = 1ULL << core;
 		const int result = scePthreadSetaffinity(scePthreadSelf(), mask);
-		// (AI-assisted) Core placement needs proper testing across base/Pro consoles.
 		std::printf("PS4 thread affinity: %s core=%d mask=0x%llx sce_result=0x%x\n", role, core, mask, result);
 		std::fflush(stdout);
 	}
