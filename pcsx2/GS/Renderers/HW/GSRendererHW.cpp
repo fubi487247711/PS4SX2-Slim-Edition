@@ -2921,21 +2921,7 @@ void GSRendererHW::Draw()
 		g_orbis_prim = (unsigned)m_vt.m_primclass;
 		g_orbis_verts = (unsigned)m_index->tail;
 	}
-	// Orbis: bring-up draw counter + target info (only the first three draws).
-	{
-		static unsigned draws_logged = 0;
-		if (draws_logged < 3)
-		{
-			const unsigned long long n = draws_logged++;
-			const GSDrawingContext* dc = m_context;
-			printf("[gshw] Draw #%llu fbp=%05x fbw=%u psm=%u zbp=%05x zpsm=%u prim=%u verts=%u tex0=%05x tw=%u th=%u tpsm=%u\n",
-				n, (unsigned)dc->FRAME.Block(), (unsigned)dc->FRAME.FBW, (unsigned)dc->FRAME.PSM,
-				(unsigned)dc->ZBUF.Block(), (unsigned)dc->ZBUF.PSM,
-				(unsigned)m_vt.m_primclass, (unsigned)m_index->tail,
-				(unsigned)dc->TEX0.TBP0, (unsigned)dc->TEX0.TW, (unsigned)dc->TEX0.TH, (unsigned)dc->TEX0.PSM);
-			fflush(stdout);
-		}
-	}
+	// Removed the one-time [gshw] startup printf/fflush from the draw hot path.
 	static u32 num_skipped_channel_shuffle_draws = 0;
 	GSVertexBuff& vtx_buff = *m_vertex;
 	GSIndexBuff& idx_buff = *m_index;
