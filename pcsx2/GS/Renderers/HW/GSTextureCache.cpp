@@ -1194,6 +1194,7 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const bool is_depth, c
 
 	for (auto t : m_dst[DepthStencil])
 	{
+		g_orbis_tcstat.depth_candidates++; // PS4: count actual depth-list entries examined
 		if (!t->m_used || (!t->m_dirty.empty() && !is_depth))
 			continue;
 
@@ -1249,6 +1250,7 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const bool is_depth, c
 	{
 		for (Target* t : m_dst[RenderTarget])
 		{
+			g_orbis_tcstat.rt_candidates++; // PS4: count actual render-target entries examined
 			if (t->m_age <= 1 && t->m_TEX0.TBP0 == bp && t->m_TEX0.TBW == TEX0.TBW && t->HasValidAlpha())
 			{
 				GL_CACHE("TC: depth: Using RT %x instead of depth because of missing alpha", t->m_TEX0.TBP0);
@@ -1281,6 +1283,7 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const bool is_depth, c
 		// Retry on the render target (Silent Hill 4)
 		for (auto t : m_dst[RenderTarget])
 		{
+			g_orbis_tcstat.rt_candidates++; // PS4: count actual render-target entries examined
 			// FIXME: do I need to allow m_age == 1 as a potential match (as DepthStencil) ???
 			if (t->m_age <= 1 && t->m_used && t->m_dirty.empty() && GSUtil::HasSharedBits(bp, psm, t->m_TEX0.TBP0, t->m_TEX0.PSM))
 			{
@@ -9288,17 +9291,21 @@ void OrbisPrintTCStats()
 {
 	static OrbisTCStats s_prev;
 	static unsigned long long s_prev_reused = 0, s_prev_fresh = 0;
+	static unsigned long long s_prev_depth_candidates = 0, s_prev_rt_candidates = 0;
 	if (!g_texture_cache)
 		return;
 	const OrbisTCStats& c = g_orbis_tcstat;
 	OrbisDeferredPrintf(
 		"[tcstat] per s: sources new=%llu del=%llu | inval=%llu dirtypage=%llu | hash lookups=%llu misses=%llu | "
-		"pool reused=%llu fresh=%llu | now: sources=%zu hashcache=%zu offsets=%zu\n",
+		"pool reused=%llu fresh=%llu | scans depth=%llu rt=%llu | now: sources=%zu hashcache=%zu offsets=%zu\n",
 		c.src_new - s_prev.src_new, c.src_del - s_prev.src_del, c.inval - s_prev.inval, c.dirty_page - s_prev.dirty_page,
 		c.hc_lookup - s_prev.hc_lookup, c.hc_miss - s_prev.hc_miss, g_orbis_pool_reused - s_prev_reused,
-		g_orbis_pool_fresh - s_prev_fresh, g_texture_cache->OrbisSourceCount(), g_texture_cache->OrbisHashCacheCount(),
+		g_orbis_pool_fresh - s_prev_fresh, c.depth_candidates - s_prev_depth_candidates,
+		c.rt_candidates - s_prev_rt_candidates, g_texture_cache->OrbisSourceCount(), g_texture_cache->OrbisHashCacheCount(),
 		g_texture_cache->OrbisSurfaceOffsetCount());
 	s_prev = c;
 	s_prev_reused = g_orbis_pool_reused;
 	s_prev_fresh = g_orbis_pool_fresh;
+	s_prev_depth_candidates = c.depth_candidates;
+	s_prev_rt_candidates = c.rt_candidates;
 }
