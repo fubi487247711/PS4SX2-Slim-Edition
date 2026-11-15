@@ -658,6 +658,9 @@ static void* RunVM(void*)
 	// PS4 Slim performance preset: keep the GS at native PS2 resolution.
 	// Do not inherit a previously saved upscale multiplier on this constrained GPU.
 	settings->SetFloatValue("EmuCore/GS", "upscale_multiplier", 1.0f);
+	// Reduce GS-side texture work on PS4 Slim. This can soften mipmapped textures,
+	// but does not alter VSync, audio, or the native render resolution.
+	settings->SetBoolValue("EmuCore/GS", "HWMipmap", false);
 	// Mild EE underclock (-1) reduces CPU-side emulation work; retain zero cycle skip
 	// to avoid the more disruptive timing inaccuracies caused by skipped EE cycles.
 	settings->SetIntValue("EmuCore/Speedhacks", "EECycleRate", -1);
