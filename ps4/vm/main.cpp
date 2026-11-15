@@ -864,7 +864,7 @@ static void* RunVM(void*)
 	{
 		// Build 60: report the effective speedhack values after VM initialization
 		// and game-specific settings have been applied. Diagnostic only; no behavior change.
-		ProbeLog("Build 60 runtime speedhacks: WaitLoop=%s IntcStat=%s vuFlagHack=%s MTVU=%s EECycleRate=%d EECycleSkip=%u\\n",
+		ProbeLog("Build 60 runtime speedhacks: WaitLoop=%s IntcStat=%s vuFlagHack=%s MTVU=%s EECycleRate=%d EECycleSkip=%u\n",
 			EmuConfig.Speedhacks.WaitLoop ? "on" : "off",
 			EmuConfig.Speedhacks.IntcStat ? "on" : "off",
 			EmuConfig.Speedhacks.vuFlagHack ? "on" : "off",
