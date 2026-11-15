@@ -9296,7 +9296,7 @@ void OrbisPrintTCStats()
 		return;
 	const OrbisTCStats& c = g_orbis_tcstat;
 	OrbisDeferredPrintf(
-		"[tcstat] per s: sources new=%llu del=%llu | inval=%llu dirtypage=%llu | hash lookups=%llu misses=%llu | "
+		"[tcstat] per 64 frames: sources new=%llu del=%llu | inval=%llu dirtypage=%llu | hash lookups=%llu misses=%llu | "
 		"pool reused=%llu fresh=%llu | scans depth=%llu rt=%llu | now: sources=%zu hashcache=%zu offsets=%zu\n",
 		c.src_new - s_prev.src_new, c.src_del - s_prev.src_del, c.inval - s_prev.inval, c.dirty_page - s_prev.dirty_page,
 		c.hc_lookup - s_prev.hc_lookup, c.hc_miss - s_prev.hc_miss, g_orbis_pool_reused - s_prev_reused,
