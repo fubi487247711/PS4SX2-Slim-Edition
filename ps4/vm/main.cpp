@@ -661,9 +661,9 @@ static void* RunVM(void*)
 	// Reduce GS-side texture work on PS4 Slim. This can soften mipmapped textures,
 	// but does not alter VSync, audio, or the native render resolution.
 	settings->SetBoolValue("EmuCore/GS", "HWMipmap", false);
-	// Keep blending at minimum accuracy to reduce the costly GS blending path.
-	// A few transparency effects may look less accurate; VSync/audio stay untouched.
-	settings->SetIntValue("EmuCore/GS", "accurate_blending_unit", 0);
+	// Keep hardware blending at the emulator's normal configured accuracy.
+	// The PS4 performance preset relies on native resolution and disabled mipmapping
+	// rather than forcing inaccurate blending that can change effects without proven gain.
 	// Keep EE timing at normal speed to avoid worsening audio pacing/synchronization.
 	// Do not use EE underclocking in the PS4 default preset; cycle skip remains disabled.
 	settings->SetIntValue("EmuCore/Speedhacks", "EECycleRate", 0);
@@ -682,10 +682,9 @@ static void* RunVM(void*)
 	// default when GameDB has no entry. Needs proper testing across titles.
 	settings->SetBoolValue("EmuCore/GS", "UserHacks", false);
 	settings->SetBoolValue("EmuCore/GS", "UserHacks_DisablePartialInvalidation", true);
-	// (AI-assisted) Triple VideoOut (ImageCount=3) with VsyncQueueSize=3 queues 2 extra frames
-	// and can show stale buffers as ghosting. Use 2 (upstream default) to reduce latency
-	// and present stalls; vsyncq was 0..1 in baseline. Needs proper testing.
-	settings->SetIntValue("EmuCore/GS", "VsyncQueueSize", 2);
+	// Keep one queued GS frame on the PS4 triple-buffered VideoOut path.
+	// This limits extra latency while allowing one frame of CPU/GPU overlap.
+	settings->SetIntValue("EmuCore/GS", "VsyncQueueSize", 1);
 	// (AI-assisted) Skip the PS2 BIOS animation and fast-forward only the
 	// emulator's boot phase. The game's own logos and loading still run normally.
 	bool fast_boot = access("/data/PS4SX2/vm-no-fast-boot", F_OK) != 0;
@@ -723,18 +722,12 @@ static void* RunVM(void*)
 	const bool audio_enabled = access("/data/PS4SX2/vm-no-audio", F_OK) != 0;
 	settings->SetStringValue("SPU2/Output", "Backend", audio_enabled ? "Cubeb" : "Null");
 	settings->SetStringValue("SPU2/Output", "SyncMode", "TimeStretch");
-	// (AI-assisted) Longer sequences suit slowed audio and need fewer overlap
-	// searches. Leave enough queued audio for the resulting larger bursts.
-	// Needs proper testing with speech, transitions and pause on the console.
-	// (AI-assisted) Optimize audio buffer and time-stretching window for PS4.
-	// 70 ms buffer with 35 ms sequences avoids audio buffer underruns (input_short)
-	// while keeping speech and sound effects responsive and glitch-free.
-	// Needs proper testing across games on the console.
-	const bool legacy_audio = access("/data/PS4SX2/vm-audio-legacy-stretch", F_OK) == 0;
-	settings->SetIntValue("SPU2/Output", "BufferMS", legacy_audio ? 50 : 70);
-	settings->SetIntValue("SPU2/Output", "StretchSequenceLengthMS", legacy_audio ? 30 : 35);
-	settings->SetIntValue("SPU2/Output", "StretchSeekWindowMS", legacy_audio ? 20 : 15);
-	settings->SetIntValue("SPU2/Output", "StretchOverlapMS", legacy_audio ? 10 : 8);
+	// Balanced PS4 audio preset: moderate queue depth with shorter stretch windows
+	// to reduce audible warble/latency while retaining underrun headroom.
+	settings->SetIntValue("SPU2/Output", "BufferMS", 80);
+	settings->SetIntValue("SPU2/Output", "StretchSequenceLengthMS", 25);
+	settings->SetIntValue("SPU2/Output", "StretchSeekWindowMS", 15);
+	settings->SetIntValue("SPU2/Output", "StretchOverlapMS", 10);
 	settings->SetBoolValue("SPU2/Output", "StretchUseQuickSeek", false);
 	settings->SetIntValue("SPU2/Output", "StandardVolume", 100);
 	settings->SetBoolValue("SPU2/Output", "OutputMuted", false);
