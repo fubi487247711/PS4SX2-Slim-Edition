@@ -661,6 +661,9 @@ static void* RunVM(void*)
 	// Reduce GS-side texture work on PS4 Slim. This can soften mipmapped textures,
 	// but does not alter VSync, audio, or the native render resolution.
 	settings->SetBoolValue("EmuCore/GS", "HWMipmap", false);
+	// Keep blending at minimum accuracy to reduce the costly GS blending path.
+	// A few transparency effects may look less accurate; VSync/audio stay untouched.
+	settings->SetIntValue("EmuCore/GS", "accurate_blending_unit", 0);
 	// Mild EE underclock (-1) reduces CPU-side emulation work; retain zero cycle skip
 	// to avoid the more disruptive timing inaccuracies caused by skipped EE cycles.
 	settings->SetIntValue("EmuCore/Speedhacks", "EECycleRate", -1);
