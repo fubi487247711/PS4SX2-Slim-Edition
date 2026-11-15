@@ -175,17 +175,8 @@ GSTexture* GSRendererHW::GetOutput(int i, float& scale, int& y_offset)
 	TEX0.PSM = curFramebuffer.PSM;
 
 	GSTextureCache::Target* rt = g_texture_cache->LookupDisplayTarget(TEX0, framebufferSize, GetTextureScaleFactor(), false);
-	{
-		static unsigned long long orbis_go = 0;
-		unsigned long long n = orbis_go++;
-		if (n < 4 || (n % 200) == 0)
-		{
-			printf("[gsout] #%llu i=%d block=%05x fbw=%u psm=%u size=%dx%d rt=%p tex=%p\n", n, i,
-				(unsigned)TEX0.TBP0, (unsigned)TEX0.TBW, (unsigned)TEX0.PSM,
-				framebufferSize.x, framebufferSize.y, (void*)rt, rt ? (void*)rt->m_texture : nullptr);
-			fflush(stdout);
-		}
-	}
+	// Removed periodic [gsout] printf/fflush from the presentation hot path.
+	// Keep this path free of diagnostic I/O during normal gameplay.
 	if (rt)
 	{
 		const u32 bp_adj = (TEX0.TBP0 < rt->m_TEX0.TBP0 && rt->UnwrappedEndBlock() > GS_MAX_BLOCKS) ? (TEX0.TBP0 + GS_MAX_BLOCKS) : TEX0.TBP0;
