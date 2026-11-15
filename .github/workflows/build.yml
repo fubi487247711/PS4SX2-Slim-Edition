@@ -3,7 +3,7 @@ name: Build PS4SX2
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, build60-auto-graphics-api]
     paths-ignore:
       - 'MD/**'
       - '**/*.md'
