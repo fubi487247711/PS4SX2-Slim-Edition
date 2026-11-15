@@ -868,7 +868,7 @@ static void* RunVM(void*)
 		const char* gs_renderer = GSIsHardwareRenderer() ? "hardware" : "software";
 		char speedhack_line[512];
 		std::snprintf(speedhack_line, sizeof(speedhack_line),
-			"Build 61 runtime: WaitLoop=%s IntcStat=%s vuFlagHack=%s MTVU=%s EECycleRate=%d EECycleSkip=%u GSRenderer=%s VulkanDevice=%s\\n",
+			"Build 61 runtime: WaitLoop=%s IntcStat=%s vuFlagHack=%s MTVU=%s EECycleRate=%d EECycleSkip=%u GSRenderer=%s VulkanDevice=%s\n",
 			EmuConfig.Speedhacks.WaitLoop ? "on" : "off",
 			EmuConfig.Speedhacks.IntcStat ? "on" : "off",
 			EmuConfig.Speedhacks.vuFlagHack ? "on" : "off",
