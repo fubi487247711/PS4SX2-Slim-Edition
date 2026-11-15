@@ -655,12 +655,13 @@ static void* RunVM(void*)
 	ProbeLog("CDVD timing: %s\n", fast_cdvd ? "accelerated by opt-in marker" : "normal (compatibility default)");
 	// (AI-assisted) Let the backend choose the compiled renderer; on this PS4 build that is Vulkan.
 	settings->SetIntValue("EmuCore/GS", "Renderer", static_cast<int>(GSRendererType::VK));
-	// PS4 performance preset: use minimum GS blending accuracy to reduce the
-	// expensive blending emulation path on bandwidth-limited hardware.
-	// This can reduce transparency accuracy in a small number of effects.
-	settings->SetIntValue("EmuCore/GS", "accurate_blending_unit", 0);
-	if (!settings->ContainsValue("EmuCore/GS", "upscale_multiplier"))
-		settings->SetFloatValue("EmuCore/GS", "upscale_multiplier", 1.0f);
+	// PS4 Slim performance preset: keep the GS at native PS2 resolution.
+	// Do not inherit a previously saved upscale multiplier on this constrained GPU.
+	settings->SetFloatValue("EmuCore/GS", "upscale_multiplier", 1.0f);
+	// Mild EE underclock (-1) reduces CPU-side emulation work; retain zero cycle skip
+	// to avoid the more disruptive timing inaccuracies caused by skipped EE cycles.
+	settings->SetIntValue("EmuCore/Speedhacks", "EECycleRate", -1);
+	settings->SetIntValue("EmuCore/Speedhacks", "EECycleSkip", 0);
 	const bool disable_shader_cache = access("/data/PS4SX2/vm-no-shader-cache", F_OK) == 0;
 	settings->SetBoolValue("EmuCore/GS", "DisableShaderCache", disable_shader_cache);
 	settings->SetBoolValue("EmuCore/GS", "HWSpinGPUForReadbacks", false);
