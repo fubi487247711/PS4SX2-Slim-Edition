@@ -21,9 +21,11 @@ namespace PS4ThreadAffinity
 		if (value >= 0)
 			return value != 0;
 
-		// Use the existing PS4 role-to-core layout by default. Keep an explicit
-		// escape hatch for consoles/firmware where the scheduler performs better.
-		value = access("/data/PS4SX2/vm-no-thread-affinity", F_OK) == 0 ? 0 : 1;
+		// Let the PS4 scheduler place worker threads by default. Fixed per-core
+		// pinning regressed the same DBZ fight benchmark on this PS4 Slim
+		// (Build 57: 45% / 11.3 FPS; Build 58: 42% / 10.5 FPS).
+		// Keep affinity available only as an explicit A/B experiment.
+		value = access("/data/PS4SX2/vm-thread-affinity", F_OK) == 0 ? 1 : 0;
 		enabled.store(value, std::memory_order_release);
 		return value != 0;
 	}
