@@ -6,6 +6,7 @@
 #include "ImGui/FullscreenUI.h"
 #include "ImGui/ImGuiManager.h"
 #include "GS/Renderers/Common/GSRenderer.h"
+#include "GS/Renderers/HW/GSTextureCache.h"
 #include "GS/GSCapture.h"
 #include "GS/GSDump.h"
 #include "GS/GSGL.h"
@@ -695,6 +696,10 @@ void GSRenderer::VSync(u32 field, bool registers_written, bool idle_frame)
 
 		if ((g_perfmon.GetFrame() & 0x1f) == 0)
 			g_perfmon.Update();
+
+		// Emit texture-cache lookup scan counts roughly once per 64 presented frames.
+		if ((g_perfmon.GetFrame() & 0x3f) == 0)
+			OrbisPrintTCStats();
 
 		// Little bit ugly, but we can't do CAS inside the render pass.
 		GSVector4i src_rect;
