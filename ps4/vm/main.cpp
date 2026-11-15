@@ -682,7 +682,7 @@ static void* RunVM(void*)
 	settings->SetBoolValue("EmuCore", "EnableFastBootFastForward", fast_boot);
 	settings->SetBoolValue("EmuCore", "EnablePINE", false);
 	settings->SetBoolValue("EmuCore", "EnableThreadPinning", false);
-	// Use the PS4's spare CPU capacity for the VU1 worker (MTVU).
+	// Use PS4 CPU parallelism for VU1 while retaining normal PS2 guest timing.
 	// This parallelizes host-side emulation work; it does not overclock or alter PS2 guest timing.
 	settings->SetBoolValue("EmuCore/Speedhacks", "vuThread", true);
 #if defined(PCSX2_PS4_VM_BOOT_JIT)
