@@ -642,7 +642,7 @@ extern std::unique_ptr<GSTextureCache> g_texture_cache;
 // vk-285-125 (PS5 port, AI-assisted): the texture cache's counters for the [tcstat] line (GS thread only).
 struct OrbisTCStats
 {
-	unsigned long long src_new = 0, src_del = 0, inval = 0, dirty_page = 0, hc_lookup = 0, hc_miss = 0;
+	unsigned long long src_new = 0, src_del = 0, inval = 0, dirty_page = 0, hc_lookup = 0, hc_miss = 0, depth_candidates = 0, rt_candidates = 0;
 };
 extern OrbisTCStats g_orbis_tcstat;
 void OrbisPrintTCStats();
