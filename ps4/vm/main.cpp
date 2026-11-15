@@ -643,24 +643,19 @@ static void* RunVM(void*)
 		access("/data/PS4SX2/vm-ee-cycle-normal", F_OK) == 0 ? "present" : "absent",
 		access("/data/PS4SX2/vm-ee-cycle-skip", F_OK) == 0 ? "present" : "absent");
 
-	// (AI-assisted) Recommended speedhacks: vuFlagHack eliminates VU1 status flag overhead,
-	// IntcStat and WaitLoop bypass guest idle loops. Keep normal disc timing by default.
-	// Needs proper testing per game.
-	settings->SetBoolValue("EmuCore/Speedhacks", "vuFlagHack", true);
-	settings->SetBoolValue("EmuCore/Speedhacks", "IntcStat", true);
-	settings->SetBoolValue("EmuCore/Speedhacks", "WaitLoop", true);
+	// Accuracy profile: disable PCSX2 speedhacks that shortcut guest timing or idle-loop behavior.
+	settings->SetBoolValue("EmuCore/Speedhacks", "vuFlagHack", false);
+	settings->SetBoolValue("EmuCore/Speedhacks", "IntcStat", false);
+	settings->SetBoolValue("EmuCore/Speedhacks", "WaitLoop", false);
 	const bool fast_cdvd = access("/data/PS4SX2/vm-fast-cdvd", F_OK) == 0 &&
 	                       access("/data/PS4SX2/vm-no-fast-cdvd", F_OK) != 0;
 	settings->SetBoolValue("EmuCore/Speedhacks", "fastCDVD", fast_cdvd);
 	ProbeLog("CDVD timing: %s\n", fast_cdvd ? "accelerated by opt-in marker" : "normal (compatibility default)");
 	// (AI-assisted) Let the backend choose the compiled renderer; on this PS4 build that is Vulkan.
 	settings->SetIntValue("EmuCore/GS", "Renderer", static_cast<int>(GSRendererType::VK));
-	// PS4 Slim performance preset: keep the GS at native PS2 resolution.
-	// Do not inherit a previously saved upscale multiplier on this constrained GPU.
+	// Original-console compatibility profile: native PS2 internal resolution and normal mipmapping.
 	settings->SetFloatValue("EmuCore/GS", "upscale_multiplier", 1.0f);
-	// Reduce GS-side texture work on PS4 Slim. This can soften mipmapped textures,
-	// but does not alter VSync, audio, or the native render resolution.
-	settings->SetBoolValue("EmuCore/GS", "HWMipmap", false);
+	settings->SetBoolValue("EmuCore/GS", "HWMipmap", true);
 	// Keep hardware blending at the emulator's normal configured accuracy.
 	// The PS4 performance preset relies on native resolution and disabled mipmapping
 	// rather than forcing inaccurate blending that can change effects without proven gain.
@@ -672,19 +667,14 @@ static void* RunVM(void*)
 	settings->SetBoolValue("EmuCore/GS", "DisableShaderCache", disable_shader_cache);
 	settings->SetBoolValue("EmuCore/GS", "HWSpinGPUForReadbacks", false);
 	settings->SetBoolValue("EmuCore/GS", "HWSpinCPUForReadbacks", false);
-	// (AI-assisted) Hardware palette conversion, frame preloading, and partial invalidation bypass
-	// reduce CPU stalls in 1x/2x upscale; needs proper testing.
-	settings->SetBoolValue("EmuCore/GS", "paltex", true);
-	settings->SetBoolValue("EmuCore/GS", "preload_frame_with_gs_data", true);
-	// (AI-assisted) Let per-game GameDB HW fixes apply (autoFlush, halfPixelOffset, etc) to fix
-	// shadows/post-processing without forcing manual overrides. GTA SA (SLUS-20946) needs
-	// autoFlush=1 + halfPixelOffset=5. DisablePartialInvalidation=true stays as PS4 perf
-	// default when GameDB has no entry. Needs proper testing across titles.
+	// Accuracy profile: do not force palette, frame-preload, or partial-invalidation shortcuts.
+	// Leave per-game GameDB fixes available, but disable global user hacks.
+	settings->SetBoolValue("EmuCore/GS", "paltex", false);
+	settings->SetBoolValue("EmuCore/GS", "preload_frame_with_gs_data", false);
 	settings->SetBoolValue("EmuCore/GS", "UserHacks", false);
-	settings->SetBoolValue("EmuCore/GS", "UserHacks_DisablePartialInvalidation", true);
-	// Keep one queued GS frame on the PS4 triple-buffered VideoOut path.
-	// This limits extra latency while allowing one frame of CPU/GPU overlap.
-	settings->SetIntValue("EmuCore/GS", "VsyncQueueSize", 1);
+	settings->SetBoolValue("EmuCore/GS", "UserHacks_DisablePartialInvalidation", false);
+	// Use the standard two-frame GS queue instead of the latency-reduced PS4 preset.
+	settings->SetIntValue("EmuCore/GS", "VsyncQueueSize", 2);
 	// (AI-assisted) Skip the PS2 BIOS animation and fast-forward only the
 	// emulator's boot phase. The game's own logos and loading still run normally.
 	bool fast_boot = access("/data/PS4SX2/vm-no-fast-boot", F_OK) != 0;
@@ -692,12 +682,8 @@ static void* RunVM(void*)
 	settings->SetBoolValue("EmuCore", "EnableFastBootFastForward", fast_boot);
 	settings->SetBoolValue("EmuCore", "EnablePINE", false);
 	settings->SetBoolValue("EmuCore", "EnableThreadPinning", false);
-	// (AI-assisted) Respect the PS4 build option; release scripts enable MTVU.
-#if defined(PCSX2_PS4_VM_BOOT_MTVU)
-	settings->SetBoolValue("EmuCore/Speedhacks", "vuThread", true);
-#else
+	// Accuracy-first baseline: run VU1 on the normal emulation path, not the MTVU speedhack.
 	settings->SetBoolValue("EmuCore/Speedhacks", "vuThread", false);
-#endif
 #if defined(PCSX2_PS4_VM_BOOT_JIT)
 	settings->SetBoolValue("EmuCore/CPU/Recompiler", "EnableEE", true);
 	settings->SetBoolValue("EmuCore/CPU/Recompiler", "EnableIOP", true);
@@ -722,11 +708,10 @@ static void* RunVM(void*)
 	const bool audio_enabled = access("/data/PS4SX2/vm-no-audio", F_OK) != 0;
 	settings->SetStringValue("SPU2/Output", "Backend", audio_enabled ? "Cubeb" : "Null");
 	settings->SetStringValue("SPU2/Output", "SyncMode", "TimeStretch");
-	// Balanced PS4 audio preset: moderate queue depth with shorter stretch windows
-	// to reduce audible warble/latency while retaining underrun headroom.
-	settings->SetIntValue("SPU2/Output", "BufferMS", 80);
-	settings->SetIntValue("SPU2/Output", "StretchSequenceLengthMS", 25);
-	settings->SetIntValue("SPU2/Output", "StretchSeekWindowMS", 15);
+	// Conservative audio buffering for stable timing during full-speed PS2 emulation.
+	settings->SetIntValue("SPU2/Output", "BufferMS", 100);
+	settings->SetIntValue("SPU2/Output", "StretchSequenceLengthMS", 30);
+	settings->SetIntValue("SPU2/Output", "StretchSeekWindowMS", 20);
 	settings->SetIntValue("SPU2/Output", "StretchOverlapMS", 10);
 	settings->SetBoolValue("SPU2/Output", "StretchUseQuickSeek", false);
 	settings->SetIntValue("SPU2/Output", "StandardVolume", 100);
