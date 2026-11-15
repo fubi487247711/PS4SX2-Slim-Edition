@@ -655,6 +655,10 @@ static void* RunVM(void*)
 	ProbeLog("CDVD timing: %s\n", fast_cdvd ? "accelerated by opt-in marker" : "normal (compatibility default)");
 	// (AI-assisted) Let the backend choose the compiled renderer; on this PS4 build that is Vulkan.
 	settings->SetIntValue("EmuCore/GS", "Renderer", static_cast<int>(GSRendererType::VK));
+	// PS4 performance preset: use minimum GS blending accuracy to reduce the
+	// expensive blending emulation path on bandwidth-limited hardware.
+	// This can reduce transparency accuracy in a small number of effects.
+	settings->SetIntValue("EmuCore/GS", "accurate_blending_unit", 0);
 	if (!settings->ContainsValue("EmuCore/GS", "upscale_multiplier"))
 		settings->SetFloatValue("EmuCore/GS", "upscale_multiplier", 1.0f);
 	const bool disable_shader_cache = access("/data/PS4SX2/vm-no-shader-cache", F_OK) == 0;
