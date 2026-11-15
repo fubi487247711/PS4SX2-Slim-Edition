@@ -862,15 +862,23 @@ static void* RunVM(void*)
 	const auto result = VMManager::Initialize(boot, &error);
 	if (result == VMBootResult::StartupSuccess)
 	{
-		// Build 60: report the effective speedhack values after VM initialization
-		// and game-specific settings have been applied. Diagnostic only; no behavior change.
-		ProbeLog("Build 60 runtime speedhacks: WaitLoop=%s IntcStat=%s vuFlagHack=%s MTVU=%s EECycleRate=%d EECycleSkip=%u\n",
+		// Build 61: emit runtime diagnostics to both the probe logger and stderr.
+		// This keeps the values discoverable if emulog.txt is a legacy/merged log.
+		const bool gs_is_vulkan = g_gs_device && dynamic_cast<GSDeviceVK*>(g_gs_device.get()) != nullptr;
+		const char* gs_renderer = GSIsHardwareRenderer() ? "hardware" : "software";
+		char speedhack_line[512];
+		std::snprintf(speedhack_line, sizeof(speedhack_line),
+			"Build 61 runtime: WaitLoop=%s IntcStat=%s vuFlagHack=%s MTVU=%s EECycleRate=%d EECycleSkip=%u GSRenderer=%s VulkanDevice=%s\n",
 			EmuConfig.Speedhacks.WaitLoop ? "on" : "off",
 			EmuConfig.Speedhacks.IntcStat ? "on" : "off",
 			EmuConfig.Speedhacks.vuFlagHack ? "on" : "off",
 			EmuConfig.Speedhacks.vuThread ? "on" : "off",
 			static_cast<int>(EmuConfig.Speedhacks.EECycleRate),
-			static_cast<unsigned>(EmuConfig.Speedhacks.EECycleSkip));
+			static_cast<unsigned>(EmuConfig.Speedhacks.EECycleSkip),
+			gs_renderer, gs_is_vulkan ? "Vulkan" : "not-vulkan");
+		ProbeLog("%s", speedhack_line);
+		std::fputs(speedhack_line, stderr);
+		std::fflush(stderr);
 		ApplyGameAspect(s_game_aspect);
 		ApplyPerformanceOverlay();
 		if (s_use_vulkan_selector)
