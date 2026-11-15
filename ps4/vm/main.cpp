@@ -664,9 +664,9 @@ static void* RunVM(void*)
 	// Keep blending at minimum accuracy to reduce the costly GS blending path.
 	// A few transparency effects may look less accurate; VSync/audio stay untouched.
 	settings->SetIntValue("EmuCore/GS", "accurate_blending_unit", 0);
-	// Mild EE underclock (-1) reduces CPU-side emulation work; retain zero cycle skip
-	// to avoid the more disruptive timing inaccuracies caused by skipped EE cycles.
-	settings->SetIntValue("EmuCore/Speedhacks", "EECycleRate", -1);
+	// Keep EE timing at normal speed to avoid worsening audio pacing/synchronization.
+	// Do not use EE underclocking in the PS4 default preset; cycle skip remains disabled.
+	settings->SetIntValue("EmuCore/Speedhacks", "EECycleRate", 0);
 	settings->SetIntValue("EmuCore/Speedhacks", "EECycleSkip", 0);
 	const bool disable_shader_cache = access("/data/PS4SX2/vm-no-shader-cache", F_OK) == 0;
 	settings->SetBoolValue("EmuCore/GS", "DisableShaderCache", disable_shader_cache);
