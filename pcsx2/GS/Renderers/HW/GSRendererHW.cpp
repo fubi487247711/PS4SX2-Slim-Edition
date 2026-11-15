@@ -2921,13 +2921,21 @@ void GSRendererHW::Draw()
 {
 	PS4_GS_SCOPE(HWDraw);
 	OrbisHwDrawTimer orbis_hwdraw_timer;
-	g_orbis_ctx = m_context; g_orbis_tme = PRIM->TME; g_orbis_prim = (unsigned)m_vt.m_primclass; g_orbis_verts = (unsigned)m_index->tail;
-	// Orbis: bring-up draw counter + target info.
+	// Diagnostic context is only consumed by the optional draw profiler. Avoid
+	// four global writes on every draw when profiling is disabled.
+	if (s_orbis_drawprof)
 	{
-		static unsigned long long orbis_draws = 0;
-		unsigned long long n = orbis_draws++;
-		if (n < 3)
+		g_orbis_ctx = m_context;
+		g_orbis_tme = PRIM->TME;
+		g_orbis_prim = (unsigned)m_vt.m_primclass;
+		g_orbis_verts = (unsigned)m_index->tail;
+	}
+	// Orbis: bring-up draw counter + target info (only the first three draws).
+	{
+		static unsigned draws_logged = 0;
+		if (draws_logged < 3)
 		{
+			const unsigned long long n = draws_logged++;
 			const GSDrawingContext* dc = m_context;
 			printf("[gshw] Draw #%llu fbp=%05x fbw=%u psm=%u zbp=%05x zpsm=%u prim=%u verts=%u tex0=%05x tw=%u th=%u tpsm=%u\n",
 				n, (unsigned)dc->FRAME.Block(), (unsigned)dc->FRAME.FBW, (unsigned)dc->FRAME.PSM,
