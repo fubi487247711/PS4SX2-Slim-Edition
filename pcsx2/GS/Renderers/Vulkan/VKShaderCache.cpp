@@ -620,11 +620,17 @@ bool VKShaderCache::FlushPipelineCache()
 
 	data.resize(data_size);
 
-	// Save disk writes if it hasn't changed, think of the poor SSDs.
-	FILESYSTEM_STAT_DATA sd;
-	if (!FileSystem::StatFile(m_pipeline_cache_filename.c_str(), &sd) || sd.Size != static_cast<s64>(data_size))
+	// Avoid unnecessary writes, but compare the contents as well as the size.
+	// A Vulkan pipeline cache can change while retaining exactly the same byte size.
+	const std::optional<std::vector<u8>> existing_data =
+		FileSystem::ReadBinaryFile(m_pipeline_cache_filename.c_str());
+	const bool cache_is_unchanged = existing_data.has_value() && existing_data->size() == data.size() &&
+		std::memcmp(existing_data->data(), data.data(), data.size()) == 0;
+
+	if (!cache_is_unchanged)
 	{
-		Console.WriteLn("Writing %zu bytes to '%s'", data_size, m_pipeline_cache_filename.c_str());
+		Console.WriteLn("Updating Vulkan pipeline cache (%zu bytes) at '%s'", data_size,
+			m_pipeline_cache_filename.c_str());
 		if (!FileSystem::WriteBinaryFile(m_pipeline_cache_filename.c_str(), data.data(), data.size()))
 		{
 			Console.Error("Failed to write pipeline cache to '%s'", m_pipeline_cache_filename.c_str());
@@ -633,7 +639,7 @@ bool VKShaderCache::FlushPipelineCache()
 	}
 	else
 	{
-		Console.WriteLn("Skipping updating pipeline cache '%s' due to no changes.", m_pipeline_cache_filename.c_str());
+		Console.WriteLn("Vulkan pipeline cache unchanged; keeping '%s'.", m_pipeline_cache_filename.c_str());
 	}
 
 	m_pipeline_cache_dirty = false;
