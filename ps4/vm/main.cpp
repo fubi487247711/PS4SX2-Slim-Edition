@@ -140,8 +140,8 @@ static u32 s_blocked_pad_buttons = 0;
 static bool s_menu_chord_latched = false;
 static bool s_game_menu_open = false;
 static unsigned s_game_menu_selection = 0;
-static unsigned s_game_upscale = 1;
-static unsigned s_max_game_upscale = 1;
+static float s_game_upscale = 0.75f;
+static float s_max_game_upscale = 1.0f;
 static unsigned s_game_aspect = 1;
 static bool s_game_show_performance_overlay = true;
 static u32 s_game_menu_direction = 0;
@@ -221,13 +221,12 @@ static void ReadGameResolution()
 {
 	MTGS::RunOnGSThread([]() {
 		s_max_game_upscale = (g_gs_device && GSIsHardwareRenderer()) ?
-			std::clamp(GSGetMaxUpscaleMultiplier(g_gs_device->GetMaxTextureSize()), 1u, 4u) : 1u;
+			static_cast<float>(std::clamp(GSGetMaxUpscaleMultiplier(g_gs_device->GetMaxTextureSize()), 1u, 4u)) : 1.0f;
 		const float configured = GSConfig.UpscaleMultiplier;
-		// A corrupted/uninitialized value must never be exposed as a 68x or 20x
-		// menu choice. The launcher intentionally exposes only 1x..4x.
-		s_game_upscale = (std::isfinite(configured) && configured >= 1.0f && configured <= 4.0f) ?
-			static_cast<unsigned>(configured + 0.5f) : 1u;
-		s_game_upscale = std::min(s_game_upscale, s_max_game_upscale);
+		// The PS4 pause menu exposes quarter-step scaling down to 0.75x.
+		s_game_upscale = (std::isfinite(configured) && configured >= 0.75f && configured <= 4.0f) ?
+			std::round(configured * 4.0f) / 4.0f : 1.0f;
+		s_game_upscale = std::clamp(s_game_upscale, 0.75f, s_max_game_upscale);
 		s_game_aspect = std::clamp(static_cast<unsigned>(GSConfig.AspectRatio), 0u, 4u);
 	});
 	if (s_verbose_diag)
@@ -528,17 +527,17 @@ void VMHostPoll()
 				const int delta = navigation == ORBIS_PAD_BUTTON_LEFT ? -1 : 1;
 				if (s_game_menu_selection == 1)
 				{
-					const unsigned requested = static_cast<unsigned>(std::clamp(static_cast<int>(s_game_upscale) + delta,
-						1, static_cast<int>(s_max_game_upscale)));
-					if (requested != s_game_upscale)
+					const float requested = std::clamp(s_game_upscale + static_cast<float>(delta) * 0.25f,
+						0.75f, s_max_game_upscale);
+					if (std::abs(requested - s_game_upscale) > 0.001f)
 					{
-						EmuConfig.GS.UpscaleMultiplier = static_cast<float>(requested);
+						EmuConfig.GS.UpscaleMultiplier = requested;
 						MTGS::ApplySettings();
 						ReadGameResolution();
-						EmuConfig.GS.UpscaleMultiplier = static_cast<float>(s_game_upscale);
-						Host::SetBaseFloatSettingValue("EmuCore/GS", "upscale_multiplier", static_cast<float>(s_game_upscale));
+						EmuConfig.GS.UpscaleMultiplier = s_game_upscale;
+						Host::SetBaseFloatSettingValue("EmuCore/GS", "upscale_multiplier", s_game_upscale);
 						Host::CommitBaseSettingChanges();
-						ProbeLog("Internal resolution: requested=%ux applied=%ux menu_limit=%ux (saved)\n",
+						ProbeLog("Internal resolution: requested=%.2fx applied=%.2fx menu_limit=%.2fx (saved)\n",
 							requested, s_game_upscale, s_max_game_upscale);
 					}
 				}
