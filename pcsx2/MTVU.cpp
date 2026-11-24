@@ -246,9 +246,6 @@ void VU_Thread::Reset()
 
 void VU_Thread::ExecuteRingBuffer()
 {
-#if defined(PCSX2_PS4_VM_BOOT)
-	u32 cpu_sample_commands = 0;
-#endif
 	Threading::SetNameOfCurrentThread("MTVU");
 #if defined(PCSX2_PS4_VM_BOOT)
 	PS4ThreadAffinity::PinCurrentThread("VU1", 3);
@@ -260,9 +257,6 @@ void VU_Thread::ExecuteRingBuffer()
 			PS4_WORKER_SCOPE(VUIdle);
 			const unsigned long long t0 = __builtin_ia32_rdtsc(); // eerec-281
 			g_orbis_vu_waiting.store(1, std::memory_order_relaxed); // vk-285-29
-#if defined(PCSX2_PS4_VM_BOOT)
-			PS4ThreadCPUMetrics::Sample(PS4ThreadCPUMetrics::Role::VU1);
-#endif
 			if (g_orbis_mtvu_spin.load(std::memory_order_relaxed)) // vk-285-84
 				semaEvent.WaitForWorkWithSpin();
 			else
@@ -278,11 +272,6 @@ void VU_Thread::ExecuteRingBuffer()
 		while (m_ato_read_pos.load(std::memory_order_relaxed) != GetWritePos())
 		{
 			u32 tag = Read();
-#if defined(PCSX2_PS4_VM_BOOT)
-			// (AI-assisted) Avoid a clock check for every VU command in a busy ring.
-			if ((++cpu_sample_commands & 255) == 0)
-				PS4ThreadCPUMetrics::Sample(PS4ThreadCPUMetrics::Role::VU1);
-#endif
 			switch (tag)
 			{
 				case MTVU_VU_EXECUTE:
