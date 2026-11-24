@@ -1160,8 +1160,8 @@ namespace PS4GameMenu
 		if (menu_state.visible)
 		{
 			const unsigned selected_row = menu_state.selected;
-			const unsigned max_upscale = menu_state.max_upscale;
-			const unsigned upscale = menu_state.upscale;
+			const float max_upscale = menu_state.max_upscale;
+			const float upscale = menu_state.upscale;
 			const unsigned aspect = menu_state.aspect;
 			const bool show_performance_overlay = menu_state.show_overlay;
 			ImDrawList* draw = ImGui::GetBackgroundDrawList();
@@ -1187,8 +1187,8 @@ namespace PS4GameMenu
 			draw->AddText(font, 34.0f * scale, point(196, 82), white, "Emulator menu");
 			draw->AddText(font, 18.0f * scale, point(138, 205), muted, "GAME PAUSED");
 			char resolution[96];
-			std::snprintf(resolution, sizeof(resolution), "Internal resolution:  < %ux >%s", upscale,
-				upscale == 1 ? "  (native)" : "");
+			std::snprintf(resolution, sizeof(resolution), "Internal resolution:  < %.2gx >%s", upscale,
+				std::abs(upscale - 1.0f) < 0.001f ? "  (native)" : "");
 			static constexpr const char* aspect_names[] = {"Stretch", "Auto", "4:3", "16:9", "10:7"};
 			char aspect_label[96];
 			std::snprintf(aspect_label, sizeof(aspect_label), "Aspect ratio:  < %s >", aspect_names[std::min(aspect, 4u)]);
@@ -1256,7 +1256,7 @@ namespace PS4GameMenu
 						row == 1 ? "ADJUST" : (row == 2 ? "SELECT" : "TOGGLE"));
 			}
 			char hint[128];
-			std::snprintf(hint, sizeof(hint), "Left/Right: change value   |   Resolution range: 1x-%ux", max_upscale);
+			std::snprintf(hint, sizeof(hint), "Left/Right: change by 0.25x   |   Resolution range: 0.75x-%.2fx", max_upscale);
 		draw->AddText(font, 17.0f * scale, point(138, 756), muted, hint);
 		draw->AddText(font, 17.0f * scale, point(138, 786), muted, "3x and above is experimental and intended for PS4 Pro only.");
 		draw->AddText(font, 17.0f * scale, point(138, 816), muted, "Up/Down: select   Left/Right: change   X: confirm   Circle: resume");
@@ -1486,7 +1486,7 @@ namespace PS4GameMenu
 		return true;
 	}
 
-	void SetInGameMenu(bool visible, unsigned selected, unsigned upscale, unsigned max_upscale, unsigned aspect,
+	void SetInGameMenu(bool visible, unsigned selected, float upscale, float max_upscale, unsigned aspect,
 		bool show_performance_overlay)
 	{
 		const unsigned state = PackInGameMenuState({visible, selected, upscale, max_upscale, aspect,
