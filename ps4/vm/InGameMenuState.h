@@ -11,8 +11,8 @@ namespace PS4GameMenu
 	{
 		bool visible;
 		unsigned selected;
-		unsigned upscale;
-		unsigned max_upscale;
+		float upscale;
+		float max_upscale;
 		unsigned aspect;
 		bool show_overlay;
 	};
@@ -21,22 +21,23 @@ namespace PS4GameMenu
 	{
 		if (!value.visible)
 			return 0;
-		const unsigned limit = std::clamp(value.max_upscale, 1u, 4u);
+		const unsigned limit = std::clamp(static_cast<unsigned>(value.max_upscale * 4.0f + 0.5f), 3u, 16u);
+		const unsigned upscale = std::clamp(static_cast<unsigned>(value.upscale * 4.0f + 0.5f), 3u, limit);
 		return (std::min(value.selected, 5u) + 1u) |
-			(std::clamp(value.upscale, 1u, limit) << 8) |
-			(limit << 12) |
-			(std::min(value.aspect, 4u) << 16) |
-			(value.show_overlay ? (1u << 20) : 0u);
+			(upscale << 8) |
+			(limit << 13) |
+			(std::min(value.aspect, 4u) << 18) |
+			(value.show_overlay ? (1u << 21) : 0u);
 	}
 
 	constexpr InGameMenuState UnpackInGameMenuState(std::uint32_t value)
 	{
-		// These fields occupy FOUR bits, not eight. Reading 0xff here mixed the
-		// resolution with its limit (1 became 65), and aspect with overlay (0 became 16).
+		// Resolution uses quarter-step units (0.75x..4.00x) in five bits.
 		const unsigned selection = value & 0xffu;
-		const unsigned limit = std::clamp((value >> 12) & 0x0fu, 1u, 4u);
+		const unsigned limit = std::clamp((value >> 13) & 0x1fu, 3u, 16u);
+		const unsigned upscale = std::clamp((value >> 8) & 0x1fu, 3u, limit);
 		return {selection != 0, selection ? std::min(selection - 1u, 5u) : 0u,
-			std::clamp((value >> 8) & 0x0fu, 1u, limit), limit,
-			std::min((value >> 16) & 0x0fu, 4u), (value & (1u << 20)) != 0};
+			static_cast<float>(upscale) * 0.25f, static_cast<float>(limit) * 0.25f,
+			std::min((value >> 18) & 0x07u, 4u), (value & (1u << 21)) != 0};
 	}
 } // namespace PS4GameMenu
