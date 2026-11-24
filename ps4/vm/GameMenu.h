@@ -14,6 +14,6 @@ namespace PS4GameMenu
 	void ShowLoading(unsigned progress, const char* status);
 	void HideLoading();
 	// CPU thread: publish the pause panel and request a presentation while paused.
-	void SetInGameMenu(bool visible, unsigned selected, unsigned upscale = 1, unsigned max_upscale = 1,
+	void SetInGameMenu(bool visible, unsigned selected, float upscale = 1.0f, float max_upscale = 1.0f,
 		unsigned aspect = 1, bool show_performance_overlay = true);
 } // namespace PS4GameMenu
