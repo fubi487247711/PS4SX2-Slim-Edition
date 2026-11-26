@@ -82,12 +82,6 @@ GSTextureCache::~GSTextureCache()
 	_aligned_free(s_unswizzle_buffer);
 }
 
-extern unsigned long long g_orbis_read_ticks, g_orbis_read_n;
-struct OrbisReadTimer
-{
-	const unsigned long long t0 = __builtin_ia32_rdtsc();
-	~OrbisReadTimer() { g_orbis_read_ticks += __builtin_ia32_rdtsc() - t0; ++g_orbis_read_n; }
-};
 void GSTextureCache::ReadbackAll()
 {
 	for (int type = 0; type < 2; type++)
@@ -7385,7 +7379,6 @@ std::shared_ptr<GSTextureCache::Palette> GSTextureCache::LookupPaletteObject(con
 
 void GSTextureCache::Read(Target* t, const GSVector4i& r)
 {
-	OrbisReadTimer orbis_read_timer;
 	if ((!t->m_dirty.empty() && !t->m_dirty.GetTotalRect(t->m_TEX0, t->m_unscaled_size).rintersect(r).rempty()) || r.width() == 0 || r.height() == 0)
 		return;
 
@@ -7511,7 +7504,6 @@ void GSTextureCache::Read(Target* t, const GSVector4i& r)
 
 void GSTextureCache::Read(Source* t, const GSVector4i& r)
 {
-	OrbisReadTimer orbis_read_timer;
 	if (r.rempty())
 		return;
 
