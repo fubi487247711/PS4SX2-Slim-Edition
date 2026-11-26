@@ -2921,7 +2921,14 @@ void GSRendererHW::Draw()
 {
 	PS4_GS_SCOPE(HWDraw);
 	OrbisHwDrawTimer orbis_hwdraw_timer;
-	g_orbis_ctx = m_context; g_orbis_tme = PRIM->TME; g_orbis_prim = (unsigned)m_vt.m_primclass; g_orbis_verts = (unsigned)m_index->tail;
+	// Profiling-only draw context: avoid four global stores on every draw when disabled.
+	if (s_orbis_drawprof) [[unlikely]]
+	{
+		g_orbis_ctx = m_context;
+		g_orbis_tme = PRIM->TME;
+		g_orbis_prim = (unsigned)m_vt.m_primclass;
+		g_orbis_verts = (unsigned)m_index->tail;
+	}
 	// Orbis: bring-up draw counter + target info.
 	{
 		static unsigned long long orbis_draws = 0;
