@@ -18,7 +18,6 @@
 VU_Thread vu1Thread;
 unsigned long long g_orbis_vu_idle_ticks, g_orbis_ee_waitvu_ticks, g_orbis_ee_vuring_ticks; // eerec-281
 void OrbisCpuSample(int slot); // eerec-285 (GSRenderer.cpp)
-void
 std::atomic<int> g_orbis_vu_waiting{0}; // vk-285-29: the VU1 profiler skips the ring waits
 // vk-285-74: VU1 cycles and program runs the MTVU thread executed (the [load] line prints them per
 // second, so VU busy ms over VU1 cycles says how fast the recompiled code runs), and the vudump
