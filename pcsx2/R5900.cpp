@@ -15,10 +15,6 @@
 #include "COP0.h"
 #include "MTVU.h"
 #include "VMManager.h"
-#if defined(PCSX2_PS4_VM_BOOT)
-#include "ps4/core/EEEventProfilePS4.h"
-#include "ps4/core/EEHotspotsPS4.h"
-#endif
 
 #include "Hardware.h"
 #include "IPU/IPUdma.h"
@@ -420,11 +416,6 @@ static float s_orbis_ratio = 8.0f;
 // and the recompiler.  (moved here to help alleviate redundant code)
 __fi void _cpuEventTest_Shared()
 {
-#if defined(PCSX2_PS4_VM_BOOT)
-	PS4EEEventProfile::EventScope event_profile(&cpuRegs.pc);
-	if (PS4EEHotspots::enabled)
-		PS4EEHotspots::SampleEvent(cpuRegs.pc, cpuRegs.interrupt);
-#endif
 	OrbisPrefetchEventLines(); // vk-285-98
 	eeEventTestIsActive = true;
 	cpuRegs.nextEventCycle = cpuRegs.cycle + eeWaitCycles;
@@ -443,9 +434,6 @@ __fi void _cpuEventTest_Shared()
 	}
 
 	// ---- IOP -------------
-#if defined(PCSX2_PS4_VM_BOOT)
-	event_profile.Checkpoint(PS4EEEventProfile::Phase::Exceptions);
-#endif
 	// * It's important to run a iopEventTest before calling ExecuteBlock. This
 	//   is because the IOP does not always perform branch tests before returning
 	//   (during the prev branch) and also so it can act on the state the EE has
@@ -472,9 +460,6 @@ __fi void _cpuEventTest_Shared()
 	}
 
 	iopEventTest();
-#if defined(PCSX2_PS4_VM_BOOT)
-	event_profile.Checkpoint(PS4EEEventProfile::Phase::IOP);
-#endif
 
 	if (cpuTestCycle(nextStartCounter, nextDeltaCounter))
 	{
@@ -484,9 +469,6 @@ __fi void _cpuEventTest_Shared()
 	}
 
 	_cpuTestTIMR();
-#if defined(PCSX2_PS4_VM_BOOT)
-	event_profile.Checkpoint(PS4EEEventProfile::Phase::Timers);
-#endif
 
 	// ---- Interrupts -------------
 	// These are basically just DMAC-related events, which also piggy-back the same bits as
@@ -510,16 +492,10 @@ __fi void _cpuEventTest_Shared()
 	}
 
 	// ---- VU Sync -------------
-#if defined(PCSX2_PS4_VM_BOOT)
-	event_profile.Checkpoint(PS4EEEventProfile::Phase::DMA);
-#endif
 	// We're in a EventTest.  All dynarec registers are flushed
 	// so there is no need to freeze registers here.
 	CpuVU0->ExecuteBlock();
 	CpuVU1->ExecuteBlock();
-#if defined(PCSX2_PS4_VM_BOOT)
-	event_profile.Checkpoint(PS4EEEventProfile::Phase::VU);
-#endif
 
 	// ---- Schedule Next Event Test --------------
 	if (s_orbis_ratio_psxclk != PSXCLK) // vk-285-98

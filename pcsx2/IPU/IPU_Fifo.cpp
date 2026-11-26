@@ -5,9 +5,6 @@
 #include "IPU/IPU.h"
 #include "IPU/IPUdma.h"
 #include "IPU/IPU_MultiISA.h"
-#if defined(PCSX2_PS4_VM_BOOT)
-#include "ps4/core/IPUProfilePS4.h"
-#endif
 
 alignas(16) IPU_Fifo ipu_fifo;
 
@@ -157,9 +154,6 @@ void IPU_Fifo_Output::read(void *value, uint size)
 
 void ReadFIFO_IPUout(mem128_t* out)
 {
-#if defined(PCSX2_PS4_VM_BOOT)
-	PS4IPUProfile::AccessScope access_profile(PS4IPUProfile::Access::FifoRead);
-#endif
 	pxAssertMsg(ipuRegs.ctrl.OFC > 0, "Attempted read from IPUout's FIFO, but the FIFO is empty!");
 	if (ipuRegs.ctrl.OFC == 0) [[unlikely]]
 		return;
@@ -171,9 +165,6 @@ void ReadFIFO_IPUout(mem128_t* out)
 
 void WriteFIFO_IPUin(const mem128_t* value)
 {
-#if defined(PCSX2_PS4_VM_BOOT)
-	PS4IPUProfile::AccessScope access_profile(PS4IPUProfile::Access::FifoWrite);
-#endif
 	IPU_LOG( "WriteFIFO/IPUin <- 0x%08X.%08X.%08X.%08X", value->_u32[0], value->_u32[1], value->_u32[2], value->_u32[3]);
 
 	//committing every 16 bytes

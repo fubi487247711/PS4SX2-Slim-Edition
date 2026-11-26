@@ -12,10 +12,6 @@
 #include "INISettingsInterface.h"
 #include "PerformanceMetrics.h"
 #include "common/Timer.h"
-#include "ps4/core/IPUProfilePS4.h"
-#include "ps4/core/EEEventProfilePS4.h"
-#include "ps4/core/GSProfilePS4.h"
-#include "ps4/core/WorkerProfilePS4.h"
 #include <string>
 #include <mutex>
 #include <cstring>
@@ -259,38 +255,6 @@ void Host::LoadSettings(SettingsInterface& si, std::unique_lock<std::mutex>&)
 
 void Host::OnPerformanceMetricsUpdated()
 {
-	// (AI-assisted) This callback runs on the GS thread, which owns these metrics.
-	// Reading them from the CPU heartbeat would introduce unsynchronized access.
-	static Common::Timer::Value first_update = Common::Timer::GetCurrentValue();
-	static Common::Timer::Value last_log = 0;
-	const auto now = Common::Timer::GetCurrentValue();
-	if (last_log != 0 && Common::Timer::ConvertValueToSeconds(now - last_log) < 5.0)
-		return;
-	const double profile_interval = last_log ? Common::Timer::ConvertValueToSeconds(now - last_log) : 0.0;
-	last_log = now;
-	const auto fps_method = PerformanceMetrics::GetInternalFPSMethod();
-	const char* method = fps_method == PerformanceMetrics::InternalFPSMethod::GSPrivilegedRegister ? "GS-reg" :
-		fps_method == PerformanceMetrics::InternalFPSMethod::DISPFBBlit ? "FB-blit" : "unavailable";
-	const double ee_usage = PerformanceMetrics::GetCPUThreadUsage();
-	const double gs_usage = PerformanceMetrics::GetGSThreadUsage();
-	const double vu_usage = PerformanceMetrics::GetVUThreadUsage();
-	const float gpu_ms = PerformanceMetrics::GetGPUAverageTime();
-	ProbeLog("Performance: seconds=%.1f PS2_Hz=%.2f Speed_pct=%.2f Game_FPS=%.2f FPS_method=%s "
-		"Frame_ms=%.2f Frame_max_ms=%.2f EE_pct=%.2f EE_ms=%.2f GS_pct=%.2f GS_ms=%.2f "
-		"VU1_pct=%.2f VU1_ms=%.2f CPU_timing=%s CPU_clock=owner_sampled_100ms GPU_pct=%.2f GPU_ms=%.2f GPU_timing=%s\n",
-		Common::Timer::ConvertValueToSeconds(now - first_update), PerformanceMetrics::GetFPS(),
-		PerformanceMetrics::GetSpeed(), PerformanceMetrics::GetInternalFPS(), method,
-		PerformanceMetrics::GetAverageFrameTime(), PerformanceMetrics::GetMaximumFrameTime(),
-		ee_usage, PerformanceMetrics::GetCPUThreadAverageTime(), gs_usage, PerformanceMetrics::GetGSThreadAverageTime(),
-		vu_usage, PerformanceMetrics::GetVUThreadAverageTime(),
-		(ee_usage + gs_usage + vu_usage > 0.0) ? "samples" : "no_samples",
-		PerformanceMetrics::GetGPUUsage(), gpu_ms, gpu_ms > 0.0f ? "samples" : "no_samples");
-	PS4IPUProfile::LogInterval(profile_interval);
-	PS4EEEventProfile::LogInterval(profile_interval);
-	PS4GSProfile::LogInterval(profile_interval);
-	PS4WorkerProfile::LogInterval(profile_interval);
-	ProbeLog("Render configuration: internal_scale=%.2f aspect_mode=%u\n",
-		static_cast<double>(GSConfig.UpscaleMultiplier), static_cast<unsigned>(GSConfig.AspectRatio));
 }
 
 void Host::CheckForSettingsChanges(const Pcsx2Config&)

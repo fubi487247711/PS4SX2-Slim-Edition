@@ -8,8 +8,6 @@
 #include "OrbisEEDiag.h" // vk-285-100
 #include "VMManager.h"
 #include "Vif_Dynarec.h"
-#include "OrbisEEProf.h"
-#include "ps4/core/WorkerProfilePS4.h"
 
 #include <thread>
 #if defined(PCSX2_PS4_VM_BOOT)
@@ -20,7 +18,7 @@
 VU_Thread vu1Thread;
 unsigned long long g_orbis_vu_idle_ticks, g_orbis_ee_waitvu_ticks, g_orbis_ee_vuring_ticks; // eerec-281
 void OrbisCpuSample(int slot); // eerec-285 (GSRenderer.cpp)
-void OrbisVUProfStart(); // vk-285-29 (orbis_eeprof.cpp)
+void
 std::atomic<int> g_orbis_vu_waiting{0}; // vk-285-29: the VU1 profiler skips the ring waits
 // vk-285-74: VU1 cycles and program runs the MTVU thread executed (the [load] line prints them per
 // second, so VU busy ms over VU1 cycles says how fast the recompiled code runs), and the vudump
@@ -147,7 +145,6 @@ enum MTVU_EVENT
 // Calls the vif unpack functions from the MTVU thread
 static void MTVU_Unpack(void* data, VIFregisters& vifRegs)
 {
-	PS4_WORKER_SCOPE(VUUnpack);
 	u16 wl = vifRegs.cycle.wl > 0 ? vifRegs.cycle.wl : 256;
 	bool isFill = vifRegs.cycle.cl < wl;
 	if (newVifDynaRec)
@@ -254,17 +251,12 @@ void VU_Thread::ExecuteRingBuffer()
 	for (;;)
 	{
 		{
-			PS4_WORKER_SCOPE(VUIdle);
-			const unsigned long long t0 = __builtin_ia32_rdtsc(); // eerec-281
 			g_orbis_vu_waiting.store(1, std::memory_order_relaxed); // vk-285-29
 			if (g_orbis_mtvu_spin.load(std::memory_order_relaxed)) // vk-285-84
 				semaEvent.WaitForWorkWithSpin();
 			else
 				semaEvent.WaitForWork();
 			g_orbis_vu_waiting.store(0, std::memory_order_relaxed);
-			g_orbis_vu_idle_ticks += __builtin_ia32_rdtsc() - t0;
-			OrbisCpuSample(2); // eerec-285
-			OrbisVUProfStart(); // vk-285-29
 		}
 		if (m_shutdown_flag.load(std::memory_order_acquire))
 			break;
@@ -317,7 +309,6 @@ void VU_Thread::ExecuteRingBuffer()
 					const u32 orbis_start_q0 = reinterpret_cast<const u32*>(VU1.Mem)[0];
 					CpuVU1->SetStartPC(VU1.VI[REG_TPC].UL << 3);
 					{
-						PS4_WORKER_SCOPE(VUExecute);
 						CpuVU1->Execute(vu1RunCycles);
 					}
 					gifUnit.gifPath[GIF_PATH_1].FinishGSPacketMTVU();
@@ -472,8 +463,6 @@ __ri void VU_Thread::WaitOnSize(s32 size)
 		if (readPos <= m_write_pos || readPos > m_write_pos + size + _4kb)
 			return;
 	}
-	struct OrbisRingTimer { unsigned long long t0 = __builtin_ia32_rdtsc(); ~OrbisRingTimer() { g_orbis_ee_vuring_ticks += __builtin_ia32_rdtsc() - t0; } } orbis_ring_timer; // eerec-281
-	OrbisEEWaitScope orbis_wait; // vk-285-8
 	for (;;)
 	{
 		s32 readPos = GetReadPos();
@@ -520,8 +509,6 @@ void VU_Thread::OrbisWaitLapStart(s32 null_pos)
 	if (readPos != 0 && readPos <= null_pos) [[likely]]
 		return;
 	m_orbis_lap_waits++;
-	struct OrbisRingTimer { unsigned long long t0 = __builtin_ia32_rdtsc(); ~OrbisRingTimer() { g_orbis_ee_vuring_ticks += __builtin_ia32_rdtsc() - t0; } } orbis_ring_timer;
-	OrbisEEWaitScope orbis_wait;
 	do
 	{
 		KickStart();
@@ -824,10 +811,7 @@ void VU_Thread::WaitVU()
 {
 	MTVU_LOG("MTVU - WaitVU!");
 	FlushKick(); // vk-285-84: WaitForEmpty takes a spinning or sleeping thread as done
-	const unsigned long long t0 = __builtin_ia32_rdtsc(); // eerec-281
-	OrbisEEWaitScope orbis_wait; // vk-285-8
 	semaEvent.WaitForEmpty();
-	g_orbis_ee_waitvu_ticks += __builtin_ia32_rdtsc() - t0;
 }
 
 void VU_Thread::ExecuteVU(u32 vu_addr, u32 vif_top, u32 vif_itop, u32 fbrst)

@@ -6,11 +6,6 @@
 #include "IPU.h"
 #include "IPU_MultiISA.h"
 #include "IPUdma.h"
-#if defined(PCSX2_PS4_VM_BOOT)
-#include "ps4/core/IPUProfilePS4.h"
-#include "ps4/core/EEHotspotsPS4.h"
-#include "common/Timer.h"
-#endif
 
 #include <limits.h>
 #include "Config.h"
@@ -26,25 +21,6 @@ static void (*IPUWorker)();
 #if defined(PCSX2_PS4_VM_BOOT)
 bool g_ps4_ipu_csc_reuse = false;
 bool g_ps4_ipu0_burst = false;
-
-// (AI-assisted) Invoke the original worker exactly once, preserving command,
-// interrupt and FIFO behavior. Only selected calls receive timestamps.
-static void RunProfiledIPUWorker()
-{
-	if (PS4EEHotspots::enabled)
-		PS4EEHotspots::RecordWorker(ipu_cmd.CMD);
-	if (!PS4IPUProfile::ShouldSample())
-	{
-		IPUWorker();
-		return;
-	}
-	const u32 command = ipu_cmd.CMD;
-	const auto start = Common::Timer::GetCurrentValue();
-	IPUWorker();
-	const auto end = Common::Timer::GetCurrentValue();
-	if (end >= start)
-		PS4IPUProfile::Record(command, static_cast<u64>(Common::Timer::ConvertValueToNanoseconds(end - start)));
-}
 #endif
 
 // Color conversion stuff, the memory layout is a total hack
@@ -111,11 +87,7 @@ __fi void IPUProcessInterrupt()
 {
 	if (ipuRegs.ctrl.BUSY)
 	{
-#if defined(PCSX2_PS4_VM_BOOT)
-		RunProfiledIPUWorker();
-#else
-		IPUWorker();
-#endif
+	IPUWorker();
 	}
 }
 
@@ -250,11 +222,6 @@ void tIPU_CMD_CSC::log_from_RGB32() const
 
 __fi u32 ipuRead32(u32 mem)
 {
-#if defined(PCSX2_PS4_VM_BOOT)
-	PS4IPUProfile::AccessScope access_profile(PS4IPUProfile::Access::Read32);
-	if (PS4EEHotspots::enabled)
-		PS4EEHotspots::RecordIPU(cpuRegs.pc, mem, false, false);
-#endif
 	// Note: It's assumed that mem's input value is always in the 0x10002000 page
 	// of memory (if not, it's probably bad code).
 
@@ -305,11 +272,6 @@ __fi u32 ipuRead32(u32 mem)
 
 __fi u64 ipuRead64(u32 mem)
 {
-#if defined(PCSX2_PS4_VM_BOOT)
-	PS4IPUProfile::AccessScope access_profile(PS4IPUProfile::Access::Read64);
-	if (PS4EEHotspots::enabled)
-		PS4EEHotspots::RecordIPU(cpuRegs.pc, mem, false, true);
-#endif
 	// Note: It's assumed that mem's input value is always in the 0x10002000 page
 	// of memory (if not, it's probably bad code).
 
@@ -377,11 +339,6 @@ void ipuSoftReset()
 
 __fi bool ipuWrite32(u32 mem, u32 value)
 {
-#if defined(PCSX2_PS4_VM_BOOT)
-	PS4IPUProfile::AccessScope access_profile(PS4IPUProfile::Access::Write32);
-	if (PS4EEHotspots::enabled)
-		PS4EEHotspots::RecordIPU(cpuRegs.pc, mem, true, false);
-#endif
 	// Note: It's assumed that mem's input value is always in the 0x10002000 page
 	// of memory (if not, it's probably bad code).
 
@@ -417,11 +374,6 @@ __fi bool ipuWrite32(u32 mem, u32 value)
 // writeback itself.
 __fi bool ipuWrite64(u32 mem, u64 value)
 {
-#if defined(PCSX2_PS4_VM_BOOT)
-	PS4IPUProfile::AccessScope access_profile(PS4IPUProfile::Access::Write64);
-	if (PS4EEHotspots::enabled)
-		PS4EEHotspots::RecordIPU(cpuRegs.pc, mem, true, true);
-#endif
 	// Note: It's assumed that mem's input value is always in the 0x10002000 page
 	// of memory (if not, it's probably bad code).
 
@@ -592,10 +544,6 @@ __fi void IPUCMD_WRITE(u32 val)
 	}
 	else
 	{
-#if defined(PCSX2_PS4_VM_BOOT)
-		RunProfiledIPUWorker();
-#else
-		IPUWorker();
-#endif
+	IPUWorker();
 	}
 }
