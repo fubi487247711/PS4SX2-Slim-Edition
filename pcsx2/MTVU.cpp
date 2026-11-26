@@ -53,7 +53,7 @@ std::atomic<u32> g_orbis_vu1_b0_runs{0}, g_orbis_vu1_b0_odd{0};
 // - batch: inside a VIF1 transfer the kicks wait for its end (VU_Thread::BeginKickBatch). Default off.
 // Needs proper testing.
 std::atomic<int> g_orbis_mtvu_spin{1};
-std::atomic<int> g_orbis_mtvu_batch{0};
+std::atomic<int> g_orbis_mtvu_batch{1};
 // vk-285-90: the ring's length in KB (EmuCore/Speedhacks/OrbisMTVURingKB, live, taken at the next wrap):
 // 16384 (the whole 16 MB buffer, as before) by default. A shorter lap keeps the lines the EE thread writes
 // in the caches (a 16 MB lap comes back to lines long gone to memory). 256..16384. Needs proper testing.
